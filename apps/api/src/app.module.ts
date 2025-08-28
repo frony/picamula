@@ -11,7 +11,7 @@ import { TripsModule } from './trips/trips.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      envFilePath: '../../.env',
     }),
     TypeOrmModule.forRootAsync({
       useClass: DatabaseConfigService,

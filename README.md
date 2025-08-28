@@ -108,6 +108,9 @@ junta-tribo/
 - Redis 7+
 - npm or yarn
 
+### Environment Configuration
+The project uses a **single consolidated `.env` file** at the root level that contains all environment variables for both frontend and backend applications. This simplifies configuration management and ensures consistency across the monorepo.
+
 ### Quick Start
 
 1. **Clone and install dependencies:**
@@ -128,12 +131,8 @@ npm run dev
 
 3. **Environment setup:**
 ```bash
-# Backend
-cp apps/api/env.example apps/api/.env
-# Update database credentials in apps/api/.env
-
-# Frontend
-cp apps/web/env.example apps/web/.env
+# Manually: cp env.example .env
+# Update .env with your configuration (database credentials, JWT secret, etc.)
 ```
 
 ### Available Scripts
@@ -145,7 +144,7 @@ npm run build        # Build all apps for production
 npm run lint         # Run linting across all packages
 npm run type-check   # Type checking across all packages
 
-# Database
+# Database (run from apps/api directory)
 npm run migration:generate  # Generate new migration
 npm run migration:run      # Run pending migrations
 ```
@@ -225,8 +224,15 @@ npm run migration:run      # Run pending migrations
 
 ## 🚀 Deployment Considerations
 
+### Environment Variables Structure
+The root `.env` file is organized into sections:
+
+- **Backend API Configuration**: Server port, database, Redis, JWT settings
+- **Frontend Web Configuration**: API URL and other client-side variables
+- **Development Services**: URLs and ports for development tools
+
 ### Production Setup
-- Environment variables configuration
+- Copy `env.example` to `.env` and configure production values
 - Database migrations in production
 - Redis cluster setup for scaling
 - SSL/TLS certificates
