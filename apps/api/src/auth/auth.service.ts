@@ -1,12 +1,13 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import * as bcrypt from 'bcryptjs';
 import { UsersService } from '../users/users.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { RedisConfigService } from '../config/redis.config';
 
 @Injectable()
 export class AuthService {
@@ -14,7 +15,7 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private configService: ConfigService,
-    private redisService: RedisConfigService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   async validateUser(email: string, password: string): Promise<any> {
@@ -36,10 +37,10 @@ export class AuthService {
     const accessToken = this.jwtService.sign(payload);
 
     // Store session in Redis
-    await this.redisService.set(
+    await this.cacheManager.set(
       `session:${user.id}`,
       JSON.stringify({ userId: user.id, email: user.email }),
-      7 * 24 * 60 * 60, // 7 days
+      7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
     );
 
     return {
@@ -73,10 +74,10 @@ export class AuthService {
     const accessToken = this.jwtService.sign(payload);
 
     // Store session in Redis
-    await this.redisService.set(
+    await this.cacheManager.set(
       `session:${result.id}`,
       JSON.stringify({ userId: result.id, email: result.email }),
-      7 * 24 * 60 * 60, // 7 days
+      7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
     );
 
     return {
@@ -92,12 +93,12 @@ export class AuthService {
   }
 
   async logout(userId: string) {
-    await this.redisService.del(`session:${userId}`);
+    await this.cacheManager.del(`session:${userId}`);
     return { message: 'Logged out successfully' };
   }
 
   async validateSession(userId: string): Promise<boolean> {
-    const session = await this.redisService.get(`session:${userId}`);
+    const session = await this.cacheManager.get(`session:${userId}`);
     return !!session;
   }
 }

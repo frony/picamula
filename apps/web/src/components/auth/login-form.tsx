@@ -21,7 +21,7 @@ export function LoginForm() {
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm<LoginFormData | RegisterFormData>()
+  } = useForm<RegisterFormData>()
 
   const onSubmit = async (data: LoginFormData | RegisterFormData) => {
     try {

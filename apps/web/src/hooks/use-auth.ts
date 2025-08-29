@@ -7,14 +7,14 @@ import { LOCAL_STORAGE_KEYS } from '@junta-tribo/shared'
 import type { User, LoginDto, RegisterDto, AuthResponse } from '@junta-tribo/shared'
 
 interface AuthState {
-  user: User | null
+  user: AuthResponse['user'] | null
   token: string | null
   isLoading: boolean
   isAuthenticated: boolean
   login: (credentials: LoginDto) => Promise<void>
   register: (userData: RegisterDto) => Promise<void>
   logout: () => Promise<void>
-  setUser: (user: User | null) => void
+  setUser: (user: AuthResponse['user'] | null) => void
   setLoading: (loading: boolean) => void
 }
 
@@ -88,7 +88,7 @@ export const useAuth = create<AuthState>()(
         }
       },
 
-      setUser: (user: User | null) => {
+      setUser: (user: AuthResponse['user'] | null) => {
         set({ user, isAuthenticated: !!user })
       },
 
