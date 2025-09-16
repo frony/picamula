@@ -6,27 +6,27 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/hooks/use-auth'
 import { useToast } from '@/hooks/use-toast'
-import type { LoginDto } from '@junta-tribo/shared'
+import type { RegisterDto } from '@junta-tribo/shared'
 
-interface LoginFormData extends LoginDto {}
+interface SignupFormData extends RegisterDto {}
 
-export function LoginForm() {
+export function SignupForm() {
   const router = useRouter()
-  const { login, isLoading } = useAuth()
+  const { register, isLoading } = useAuth()
   const { toast } = useToast()
 
   const {
     register: registerField,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginFormData>()
+  } = useForm<SignupFormData>()
 
-  const onSubmit = async (data: LoginFormData) => {
+  const onSubmit = async (data: SignupFormData) => {
     try {
-      await login(data)
+      await register(data)
       toast({
         title: 'Success',
-        description: 'Logged in successfully!',
+        description: 'Account created successfully!',
       })
       router.push('/')
     } catch (error: any) {
@@ -59,6 +59,36 @@ export function LoginForm() {
 
       <div>
         <Input
+          type="text"
+          placeholder="First Name"
+          {...registerField('firstName', {
+            required: 'First name is required',
+          })}
+        />
+        {errors.firstName && (
+          <p className="text-sm text-red-500 mt-1">
+            {errors.firstName.message}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <Input
+          type="text"
+          placeholder="Last Name"
+          {...registerField('lastName', {
+            required: 'Last name is required',
+          })}
+        />
+        {errors.lastName && (
+          <p className="text-sm text-red-500 mt-1">
+            {errors.lastName.message}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <Input
           type="password"
           placeholder="Password"
           {...registerField('password', {
@@ -75,7 +105,7 @@ export function LoginForm() {
       </div>
 
       <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? 'Signing in...' : 'Sign In'}
+        {isLoading ? 'Creating account...' : 'Sign Up'}
       </Button>
     </form>
   )
