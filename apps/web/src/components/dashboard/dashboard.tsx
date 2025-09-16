@@ -58,6 +58,10 @@ export function Dashboard() {
     router.push('/trips/new')
   }
 
+  const handleTripClick = (tripId: string) => {
+    router.push(`/trips/${tripId}`)
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -169,7 +173,11 @@ export function Dashboard() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
             {trips.map((trip) => (
-              <Card key={trip.id} className="hover:shadow-lg transition-shadow">
+              <Card 
+                key={trip.id} 
+                className="hover:shadow-lg transition-shadow cursor-pointer" 
+                onClick={() => handleTripClick(trip.id)}
+              >
                 <CardHeader className="pb-3">
                   <div className="flex flex-col md:flex-row justify-between items-start gap-2">
                     <div className="flex-1 min-w-0">
