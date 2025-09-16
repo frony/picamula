@@ -1,8 +1,7 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CacheModule } from '@nestjs/cache-manager';
-import { DatabaseConfigService } from './config/database.config';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { TripsModule } from './trips/trips.module';
@@ -15,7 +14,21 @@ import * as redisStore from 'cache-manager-redis-store';
       envFilePath: '../../.env',
     }),
     TypeOrmModule.forRootAsync({
-      useClass: DatabaseConfigService,
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        host: configService.get('DB_HOST', 'localhost'),
+        port: configService.get('DB_PORT', 5432),
+        username: configService.get('DB_USERNAME', 'postgres'),
+        password: configService.get('DB_PASSWORD', 'password'),
+        database: configService.get('DB_NAME', 'junta_tribo'),
+        autoLoadEntities: true,
+        synchronize: configService.get('NODE_ENV') !== 'production',
+        logging: false,
+        migrations: ['dist/database/migrations/*.js'],
+        migrationsTableName: 'migrations',
+      }),
+      inject: [ConfigService],
     }),
     CacheModule.register({
       isGlobal: true,
@@ -31,6 +44,6 @@ import * as redisStore from 'cache-manager-redis-store';
     TripsModule,
   ],
   controllers: [],
-  providers: [DatabaseConfigService],
+  providers: [],
 })
 export class AppModule {}
