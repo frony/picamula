@@ -105,6 +105,12 @@ export const tripsApi = {
   
   delete: (id: string): Promise<AxiosResponse<void>> =>
     api.delete(`${API_ENDPOINTS.TRIPS.BASE}/${id}`),
+  
+  addNote: (id: string, noteData: { content: string; date: string }): Promise<AxiosResponse<Trip>> =>
+    api.post(`${API_ENDPOINTS.TRIPS.BASE}/${id}/notes`, noteData),
+  
+  updateNote: (id: string, noteIndex: number, noteData: { content: string; date: string }): Promise<AxiosResponse<Trip>> =>
+    api.patch(`${API_ENDPOINTS.TRIPS.BASE}/${id}/notes/${noteIndex}`, noteData),
 }
 
 export default api

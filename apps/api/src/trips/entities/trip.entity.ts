@@ -53,6 +53,9 @@ export class Trip {
   @Column('simple-json', { nullable: true })
   itinerary?: any[];
 
+  @Column('simple-json', { nullable: true })
+  notes?: { content: string; date: string }[];
+
   @ManyToOne(() => User, (user) => user.trips, { eager: true })
   @JoinColumn({ name: 'ownerId' })
   owner: User;

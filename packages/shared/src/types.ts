@@ -44,6 +44,7 @@ export interface Trip {
   budget?: number;
   participants?: string[];
   itinerary?: any[];
+  notes?: { content: string; date: string }[];
   owner: User;
   ownerId: string;
   createdAt: Date;
