@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { TripStatus } from '@junta-tribo/shared'
 import type { CreateTripDto } from '@junta-tribo/shared'
+import { X, Plus } from 'lucide-react'
 
 const createTripSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title must be less than 100 characters'),
@@ -20,6 +21,7 @@ const createTripSchema = z.object({
   startDate: z.string().min(1, 'Start date is required'),
   endDate: z.string().min(1, 'End date is required'),
   budget: z.string().optional(),
+  participants: z.array(z.string()).optional(),
 }).refine((data) => {
   const startDate = new Date(data.startDate)
   const endDate = new Date(data.endDate)
@@ -27,6 +29,15 @@ const createTripSchema = z.object({
 }, {
   message: "End date must be after or equal to start date",
   path: ["endDate"],
+}).refine((data) => {
+  if (!data.participants) return true
+  return data.participants.every(email => {
+    if (email.trim() === '') return true
+    return z.string().email().safeParse(email).success
+  })
+}, {
+  message: "Please enter valid email addresses",
+  path: ["participants"],
 })
 
 type CreateTripFormData = z.infer<typeof createTripSchema>
@@ -39,6 +50,7 @@ interface CreateTripFormProps {
 export function CreateTripForm({ onSuccess, onCancel }: CreateTripFormProps) {
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [participants, setParticipants] = useState<string[]>([])
 
   const {
     register,
@@ -48,6 +60,20 @@ export function CreateTripForm({ onSuccess, onCancel }: CreateTripFormProps) {
   } = useForm<CreateTripFormData>({
     resolver: zodResolver(createTripSchema),
   })
+
+  const addParticipant = () => {
+    setParticipants([...participants, ''])
+  }
+
+  const removeParticipant = (index: number) => {
+    setParticipants(participants.filter((_, i) => i !== index))
+  }
+
+  const updateParticipant = (index: number, value: string) => {
+    const updated = [...participants]
+    updated[index] = value
+    setParticipants(updated)
+  }
 
   const onSubmit = async (data: CreateTripFormData) => {
     setIsSubmitting(true)
@@ -61,6 +87,7 @@ export function CreateTripForm({ onSuccess, onCancel }: CreateTripFormProps) {
         endDate: new Date(data.endDate),
         budget: data.budget ? parseFloat(data.budget) : undefined,
         status: TripStatus.PLANNING,
+        participants: participants.filter(email => email.trim() !== ''),
       }
 
       await tripsApi.create(tripData)
@@ -71,6 +98,7 @@ export function CreateTripForm({ onSuccess, onCancel }: CreateTripFormProps) {
       })
       
       reset()
+      setParticipants([])
       onSuccess?.()
     } catch (error: any) {
       toast({
@@ -156,6 +184,46 @@ export function CreateTripForm({ onSuccess, onCancel }: CreateTripFormProps) {
         {errors.budget && (
           <p className="text-sm text-red-600">{errors.budget.message}</p>
         )}
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label className="text-sm font-medium">Travelers (optional)</Label>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={addParticipant}
+            className="flex items-center gap-1 text-xs"
+          >
+            <Plus className="h-3 w-3" />
+            Add Traveler
+          </Button>
+        </div>
+        <div className="space-y-2">
+          {participants.map((participant, index) => (
+            <div key={index} className="flex gap-2">
+              <Input
+                placeholder="traveler@example.com"
+                className="flex-1"
+                value={participant}
+                onChange={(e) => updateParticipant(index, e.target.value)}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => removeParticipant(index)}
+                className="px-2"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+          {participants.length === 0 && (
+            <p className="text-sm text-gray-500 italic">No travelers added yet. Click "Add Traveler" to invite someone to your trip.</p>
+          )}
+        </div>
       </div>
 
       <div className="space-y-2">
