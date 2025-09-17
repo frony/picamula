@@ -70,4 +70,32 @@ export class TripsService {
       .orderBy('trip.startDate', 'ASC')
       .getMany();
   }
+
+  async addNote(id: string, noteData: { content: string; date: string }, userId: string): Promise<Trip> {
+    const trip = await this.findOne(id, userId);
+    
+    // Initialize notes array if it doesn't exist
+    if (!trip.notes) {
+      trip.notes = [];
+    }
+    
+    // Add the new note
+    trip.notes.push(noteData);
+    
+    return await this.tripsRepository.save(trip);
+  }
+
+  async updateNote(id: string, noteIndex: number, noteData: { content: string; date: string }, userId: string): Promise<Trip> {
+    const trip = await this.findOne(id, userId);
+    
+    // Check if notes array exists and note index is valid
+    if (!trip.notes || noteIndex < 0 || noteIndex >= trip.notes.length) {
+      throw new NotFoundException(`Note at index ${noteIndex} not found`);
+    }
+    
+    // Update the note at the specified index
+    trip.notes[noteIndex] = noteData;
+    
+    return await this.tripsRepository.save(trip);
+  }
 }
