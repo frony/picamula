@@ -113,7 +113,7 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
     )
   }
 
-  const isOwner = trip.owner.id === user?.userId
+  const isOwner = trip.owner.id === (user as any)?.userId
   const startDate = new Date(trip.startDate)
   const endDate = new Date(trip.endDate)
   const today = new Date()
@@ -151,7 +151,7 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
                 Back to Dashboard
               </Button>
               <div className="hidden md:block w-px h-6 bg-gray-300" />
-              <h1 className="text-xl md:text-2xl font-bold text-primary">JuntaTribo</h1>
+              <h1 className="text-xl md:text-2xl font-bold text-primary">Pica Mula</h1>
             </div>
             <div className="flex items-center space-x-2 md:space-x-4">
               <span className="text-sm text-gray-600 hidden md:inline">
@@ -312,7 +312,7 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
         </div>
 
         {/* Itinerary Section */}
-        <Card>
+        <Card className="mb-8">
           <CardHeader>
             <CardTitle className="text-lg flex items-center">
               <Clock className="w-5 h-5 mr-2 text-purple-600" />
@@ -340,6 +340,67 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
                 <Clock className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                 <p>No itinerary items yet</p>
                 <p className="text-sm">Activities and schedule will appear here</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Notes Section */}
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle className="text-lg flex items-center">
+                  <MoreHorizontal className="w-5 h-5 mr-2 text-orange-600" />
+                  Trip Notes
+                </CardTitle>
+                <CardDescription>
+                  Keep track of important information and memories
+                </CardDescription>
+              </div>
+              <Button 
+                onClick={() => router.push(`/trips/${params.id}/notes/add`)}
+                size="sm"
+              >
+                Add Note
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {trip.notes && trip.notes.length > 0 ? (
+              <div className="space-y-4">
+                {trip.notes.map((note, index) => (
+                  <div key={index} className="border-l-4 border-orange-200 pl-4 py-3">
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-xs text-gray-500 font-medium">
+                          {new Date(note.date).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </span>
+                        {isOwner && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => router.push(`/trips/${params.id}/notes/${index}/edit`)}
+                            className="text-gray-500 hover:text-gray-700"
+                          >
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                      <p className="text-gray-700 whitespace-pre-wrap">{note.content}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <MoreHorizontal className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <p>No notes yet</p>
+                <p className="text-sm">Add notes to keep track of important trip information</p>
               </div>
             )}
           </CardContent>
