@@ -113,7 +113,7 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
     )
   }
 
-  const isOwner = trip.owner.id === user.id
+  const isOwner = trip.owner.id === user?.userId
   const startDate = new Date(trip.startDate)
   const endDate = new Date(trip.endDate)
   const today = new Date()
@@ -159,11 +159,15 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
               </span>
               {isOwner && (
                 <div className="flex items-center space-x-2">
-                  <Button variant="outline" size="sm">
+                  {/* <Button variant="outline" size="sm">
                     <Share2 className="w-4 h-4 mr-2" />
                     Share
-                  </Button>
-                  <Button variant="outline" size="sm">
+                  </Button> */}
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => router.push(`/trips/${params.id}/edit`)}
+                  >
                     <Edit className="w-4 h-4 mr-2" />
                     Edit
                   </Button>
