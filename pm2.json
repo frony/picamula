@@ -1,0 +1,16 @@
+{
+  "apps": [
+    {
+      "name": "picamula-api",
+      "cwd": "./apps/api",
+      "script": "npm",
+      "args": "run start:prod"
+    },
+    {
+      "name": "picamula-web",
+      "cwd": "./apps/web",
+      "script": "npm",
+      "args": "run start"
+    }
+  ]
+}

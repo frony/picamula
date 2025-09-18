@@ -6,7 +6,7 @@
     "build": "next build",
     "dev": "next dev -p ${FRONTEND_PORT:-3003}",
     "lint": "next lint",
-    "start": "next start",
+    "start": "NODE_ENV=production next start -p ${PORT:-3000}",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
