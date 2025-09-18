@@ -15,7 +15,15 @@
     "type-check": "turbo type-check",
     "clean": "turbo clean",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\""
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "pm2:start": "pm2 start pm2.json",
+    "pm2:stop": "pm2 stop all",
+    "pm2:restart": "pm2 restart all",
+    "pm2:stop:backend": "pm2 stop picamula-api",
+    "pm2:stop:frontend": "pm2 stop picamula-web",
+    "pm2:restart:backend": "pm2 restart picamula-api",
+    "pm2:restart:frontend": "pm2 restart picamula-web",
+    "pm2:list": "pm2 list"
   },
   "devDependencies": {
     "@turbo/gen": "^1.10.12",
