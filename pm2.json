@@ -24,7 +24,8 @@
       "args": "run start",
       "env": {
         "NODE_ENV": "production",
-        "PORT": "3003"
+        "PORT": "3003",
+        "NEXT_PUBLIC_API_URL": "https://www.picamula.com/api"
       },
       "instances": 1,
       "exec_mode": "fork",
