@@ -11,7 +11,11 @@ import * as redisStore from 'cache-manager-redis-store';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '../../.env',
+      envFilePath: [
+        '../../.env',           // For development
+        '../../../.env',        // For production (from dist folder)
+        '.env'                  // Fallback to local .env
+      ],
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
