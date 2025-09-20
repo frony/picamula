@@ -19,19 +19,29 @@ import * as redisStore from 'cache-manager-redis-store';
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get('DB_HOST', 'localhost'),
-        port: configService.get('DB_PORT', 5432),
-        username: configService.get('DB_USERNAME', 'postgres'),
-        password: configService.get('DB_PASSWORD', 'password'),
-        database: configService.get('DB_NAME', 'junta_tribo'),
-        autoLoadEntities: true,
-        synchronize: configService.get('NODE_ENV') !== 'production',
-        logging: true,
-        migrations: ['dist/database/migrations/*.js'],
-        migrationsTableName: 'migrations',
-      }),
+      useFactory: (configService: ConfigService) => {
+        // Debug logging
+        console.log('=== DATABASE CONNECTION DEBUG ===');
+        console.log('Host:', configService.get('DB_HOST', 'localhost'));
+        console.log('Port:', configService.get('DB_PORT', 5432));
+        console.log('Username:', configService.get('DB_USERNAME', 'postgres'));
+        console.log('Database:', configService.get('DB_NAME', 'junta_tribo'));
+        console.log('================================');
+        
+        return {
+          type: 'postgres',
+          host: configService.get('DB_HOST', 'localhost'),
+          port: configService.get('DB_PORT', 5432),
+          username: configService.get('DB_USERNAME', 'postgres'),
+          password: configService.get('DB_PASSWORD', 'password'),
+          database: configService.get('DB_NAME', 'junta_tribo'),
+          autoLoadEntities: true,
+          synchronize: true,
+          logging: true,
+          migrations: ['dist/database/migrations/*.js'],
+          migrationsTableName: 'migrations',
+        };
+      },
       inject: [ConfigService],
     }),
     CacheModule.register({
