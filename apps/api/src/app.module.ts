@@ -28,7 +28,7 @@ import * as redisStore from 'cache-manager-redis-store';
         database: configService.get('DB_NAME', 'junta_tribo'),
         autoLoadEntities: true,
         synchronize: configService.get('NODE_ENV') !== 'production',
-        logging: false,
+        logging: true,
         migrations: ['dist/database/migrations/*.js'],
         migrationsTableName: 'migrations',
       }),
