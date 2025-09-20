@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "build": "turbo build",
+    "build:prod": "npm run clean && turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
     "test": "turbo test",
@@ -16,6 +17,7 @@
     "clean": "turbo clean",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "deploy": "npm run build:prod && pm2 restart all",
     "pm2:start": "pm2 start pm2.json",
     "pm2:stop": "pm2 stop all",
     "pm2:restart": "pm2 restart all",
