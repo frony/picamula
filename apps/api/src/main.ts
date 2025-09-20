@@ -8,7 +8,7 @@ async function bootstrap() {
 
   // Enable CORS
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3003',
+    origin: ['https://www.picamula.com', 'http://localhost:3003'],
     credentials: true,
   });
 
