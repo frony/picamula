@@ -9,7 +9,7 @@ import { ApiKey } from '../api-keys/entities/api-key.entity';
 import { Trip } from '../../trips/entities/trip.entity';
 // import { Video } from '../../video/entities/video.entity';
 import { ApiProperty } from '@nestjs/swagger';
-import { BaseEntity } from '../../common/entites/base.entity';
+import { BaseEntity } from '../../common/entities/base.entity';
 
 @Entity()
 export class User extends BaseEntity {

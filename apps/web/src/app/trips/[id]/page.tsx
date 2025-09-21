@@ -113,7 +113,7 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
     )
   }
 
-  const isOwner = trip.owner.id === (user as any)?.userId
+  const isOwner = trip.owner.id === user?.id
   const startDate = new Date(trip.startDate)
   const endDate = new Date(trip.endDate)
   const today = new Date()
@@ -155,7 +155,7 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
             </div>
             <div className="flex items-center space-x-2 md:space-x-4">
               <span className="text-sm text-gray-600 hidden md:inline">
-                Welcome, {user?.firstName}!
+                Welcome, {user?.name}!
               </span>
               {isOwner && (
                 <div className="flex items-center space-x-2">
@@ -196,7 +196,7 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
               </div>
               <div className="flex items-center text-gray-600">
                 <User className="w-4 h-4 mr-2" />
-                <span className="text-sm">Created by {trip.owner.firstName} {trip.owner.lastName}</span>
+                <span className="text-sm">Created by {trip.owner.name}</span>
               </div>
             </div>
           </div>
@@ -262,7 +262,7 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Trip Owner</p>
-                  <p className="font-medium">{trip.owner.firstName} {trip.owner.lastName}</p>
+                  <p className="font-medium">{trip.owner.name}</p>
                 </div>
                 {trip.participants && trip.participants.length > 0 && (
                   <div>

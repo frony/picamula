@@ -6,20 +6,21 @@ import {
   Patch,
   Param,
   Delete,
-  UseGuards,
-  Request,
   Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { TripsService } from './trips.service';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TripStatus } from './entities/trip.entity';
+import { Auth } from '../iam/authentication/decorators/auth.decorator';
+import { AuthType } from '../iam/authentication/enums/auth-type.enum';
+import { ActiveUser } from '../iam/decorators/active-user.decorator';
+import { ActiveUserData } from '../iam/interfaces/active-user-data.interface';
 
 @ApiTags('Trips')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@Auth(AuthType.Bearer)
 @Controller('trips')
 export class TripsController {
   constructor(private readonly tripsService: TripsService) {}
@@ -27,26 +28,26 @@ export class TripsController {
   @ApiOperation({ summary: 'Create a new trip' })
   @ApiResponse({ status: 201, description: 'Trip created successfully' })
   @Post()
-  create(@Body() createTripDto: CreateTripDto, @Request() req) {
-    return this.tripsService.create(createTripDto, req.user.userId);
+  create(@Body() createTripDto: CreateTripDto, @ActiveUser() user: ActiveUserData) {
+    return this.tripsService.create(createTripDto, user.sub);
   }
 
   @ApiOperation({ summary: 'Get all user trips' })
   @ApiResponse({ status: 200, description: 'Trips retrieved successfully' })
   @ApiQuery({ name: 'status', required: false, enum: TripStatus })
   @Get()
-  findAll(@Request() req, @Query('status') status?: string) {
+  findAll(@ActiveUser() user: ActiveUserData, @Query('status') status?: string) {
     if (status) {
-      return this.tripsService.findByStatus(status, req.user.userId);
+      return this.tripsService.findByStatus(status, user.sub);
     }
-    return this.tripsService.findAll(req.user.userId);
+    return this.tripsService.findAll(user.sub);
   }
 
   @ApiOperation({ summary: 'Get upcoming trips' })
   @ApiResponse({ status: 200, description: 'Upcoming trips retrieved successfully' })
   @Get('upcoming')
-  findUpcoming(@Request() req) {
-    return this.tripsService.findUpcoming(req.user.userId);
+  findUpcoming(@ActiveUser() user: ActiveUserData) {
+    return this.tripsService.findUpcoming(user.sub);
   }
 
   @ApiOperation({ summary: 'Get trip by ID' })
@@ -54,8 +55,8 @@ export class TripsController {
   @ApiResponse({ status: 404, description: 'Trip not found' })
   @ApiResponse({ status: 403, description: 'Access denied' })
   @Get(':id')
-  findOne(@Param('id') id: string, @Request() req) {
-    return this.tripsService.findOne(id, req.user.userId);
+  findOne(@Param('id') id: string, @ActiveUser() user: ActiveUserData) {
+    return this.tripsService.findOne(id, user.sub);
   }
 
   @ApiOperation({ summary: 'Update trip by ID' })
@@ -63,8 +64,8 @@ export class TripsController {
   @ApiResponse({ status: 404, description: 'Trip not found' })
   @ApiResponse({ status: 403, description: 'Access denied' })
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTripDto: UpdateTripDto, @Request() req) {
-    return this.tripsService.update(id, updateTripDto, req.user.userId);
+  update(@Param('id') id: string, @Body() updateTripDto: UpdateTripDto, @ActiveUser() user: ActiveUserData) {
+    return this.tripsService.update(id, updateTripDto, user.sub);
   }
 
   @ApiOperation({ summary: 'Delete trip by ID' })
@@ -72,8 +73,8 @@ export class TripsController {
   @ApiResponse({ status: 404, description: 'Trip not found' })
   @ApiResponse({ status: 403, description: 'Access denied' })
   @Delete(':id')
-  remove(@Param('id') id: string, @Request() req) {
-    return this.tripsService.remove(id, req.user.userId);
+  remove(@Param('id') id: string, @ActiveUser() user: ActiveUserData) {
+    return this.tripsService.remove(id, user.sub);
   }
 
   @ApiOperation({ summary: 'Add note to trip' })
@@ -84,9 +85,9 @@ export class TripsController {
   addNote(
     @Param('id') id: string,
     @Body() noteData: { content: string; date: string },
-    @Request() req
+    @ActiveUser() user: ActiveUserData
   ) {
-    return this.tripsService.addNote(id, noteData, req.user.userId);
+    return this.tripsService.addNote(id, noteData, user.sub);
   }
 
   @ApiOperation({ summary: 'Update note in trip' })
@@ -98,8 +99,8 @@ export class TripsController {
     @Param('id') id: string,
     @Param('noteIndex') noteIndex: string,
     @Body() noteData: { content: string; date: string },
-    @Request() req
+    @ActiveUser() user: ActiveUserData
   ) {
-    return this.tripsService.updateNote(id, parseInt(noteIndex), noteData, req.user.userId);
+    return this.tripsService.updateNote(id, parseInt(noteIndex), noteData, user.sub);
   }
 }

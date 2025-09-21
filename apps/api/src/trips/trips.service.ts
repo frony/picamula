@@ -12,7 +12,7 @@ export class TripsService {
     private tripsRepository: Repository<Trip>,
   ) {}
 
-  async create(createTripDto: CreateTripDto, ownerId: string): Promise<Trip> {
+  async create(createTripDto: CreateTripDto, ownerId: number): Promise<Trip> {
     const trip = this.tripsRepository.create({
       ...createTripDto,
       ownerId,
@@ -20,14 +20,14 @@ export class TripsService {
     return await this.tripsRepository.save(trip);
   }
 
-  async findAll(userId: string): Promise<Trip[]> {
+  async findAll(userId: number): Promise<Trip[]> {
     return await this.tripsRepository.find({
       where: { ownerId: userId },
       order: { createdAt: 'DESC' },
     });
   }
 
-  async findOne(id: string, userId: string): Promise<Trip> {
+  async findOne(id: string, userId: number): Promise<Trip> {
     const trip = await this.tripsRepository.findOne({
       where: { id },
     });
@@ -44,25 +44,25 @@ export class TripsService {
     return trip;
   }
 
-  async update(id: string, updateTripDto: UpdateTripDto, userId: string): Promise<Trip> {
+  async update(id: string, updateTripDto: UpdateTripDto, userId: number): Promise<Trip> {
     const trip = await this.findOne(id, userId);
     Object.assign(trip, updateTripDto);
     return await this.tripsRepository.save(trip);
   }
 
-  async remove(id: string, userId: string): Promise<void> {
+  async remove(id: string, userId: number): Promise<void> {
     const trip = await this.findOne(id, userId);
     await this.tripsRepository.remove(trip);
   }
 
-  async findByStatus(status: string, userId: string): Promise<Trip[]> {
+  async findByStatus(status: string, userId: number): Promise<Trip[]> {
     return await this.tripsRepository.find({
       where: { ownerId: userId, status: status as any },
       order: { createdAt: 'DESC' },
     });
   }
 
-  async findUpcoming(userId: string): Promise<Trip[]> {
+  async findUpcoming(userId: number): Promise<Trip[]> {
     return await this.tripsRepository
       .createQueryBuilder('trip')
       .where('trip.ownerId = :userId', { userId })
@@ -71,7 +71,7 @@ export class TripsService {
       .getMany();
   }
 
-  async addNote(id: string, noteData: { content: string; date: string }, userId: string): Promise<Trip> {
+  async addNote(id: string, noteData: { content: string; date: string }, userId: number): Promise<Trip> {
     const trip = await this.findOne(id, userId);
     
     // Initialize notes array if it doesn't exist
@@ -85,7 +85,7 @@ export class TripsService {
     return await this.tripsRepository.save(trip);
   }
 
-  async updateNote(id: string, noteIndex: number, noteData: { content: string; date: string }, userId: string): Promise<Trip> {
+  async updateNote(id: string, noteIndex: number, noteData: { content: string; date: string }, userId: number): Promise<Trip> {
     const trip = await this.findOne(id, userId);
     
     // Check if notes array exists and note index is valid

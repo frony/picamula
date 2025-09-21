@@ -49,15 +49,21 @@ export class UsersService {
         used: false,
       });
       await this.emailVerificationTokenRepository.save(verification);
-      // Send email
-      const baseUrl = process.env.AUTH_URL || 'http://localhost';
-      const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
-      await this.mailService.sendMail({
-        email: newUser.email,
-        subject: 'Verify your email',
-        message: `Please verify your email by clicking the following link: ${verifyUrl}`,
-        htmlMessage: `<p>Please verify your email by clicking the following link:</p><p><a href="${verifyUrl}">${verifyUrl}</a></p>`
-      });
+      // Send email (don't let email failure prevent user creation)
+      try {
+        const baseUrl = process.env.AUTH_URL || 'http://localhost';
+        const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
+        await this.mailService.sendMail({
+          email: newUser.email,
+          subject: 'Verify your email',
+          message: `Please verify your email by clicking the following link: ${verifyUrl}`,
+          htmlMessage: `<p>Please verify your email by clicking the following link:</p><p><a href="${verifyUrl}">${verifyUrl}</a></p>`
+        });
+        this.logger.log(`Verification email sent successfully to ${newUser.email}`);
+      } catch (emailError) {
+        this.logger.warn(`Failed to send verification email to ${newUser.email}, but user creation will continue:`, emailError.message);
+        // Don't throw - let user creation succeed even if email fails
+      }
       return this.getUserRedux(newUser);
     } catch (error) {
       this.logger.error('User creation error:', {

@@ -7,12 +7,14 @@ import { IamModule } from './iam/iam.module';
 import { UsersModule } from './users/users.module';
 import { TripsModule } from './trips/trips.module';
 import * as redisStore from 'cache-manager-redis-store';
+import * as path from 'path';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: [
+        path.resolve(process.cwd(), '.env'),  // Absolute path to root .env
         '../../.env',           // For development
         '../../../.env',        // For production (from dist folder)
         '.env'                  // Fallback to local .env
@@ -57,17 +59,35 @@ import * as redisStore from 'cache-manager-redis-store';
     MailerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        transport: {
-          host: configService.get<string>('EMAIL_HOST'),
-          port: parseInt(configService.get<string>('EMAIL_PORT'), 10),
-          secure: false, // true for 465, false for other ports
-          auth: {
-            user: configService.get<string>('EMAIL_USERNAME'),
-            pass: configService.get<string>('EMAIL_PASSWORD'),
+      useFactory: (configService: ConfigService) => {
+        // Debug email configuration
+        console.log('=== EMAIL CONFIGURATION DEBUG ===');
+        console.log('ConfigService EMAIL_HOST:', configService.get<string>('EMAIL_HOST'));
+        console.log('ConfigService EMAIL_PORT:', configService.get<string>('EMAIL_PORT'));
+        console.log('ConfigService EMAIL_USERNAME:', configService.get<string>('EMAIL_USERNAME'));
+        console.log('Direct process.env.EMAIL_HOST:', process.env.EMAIL_HOST);
+        console.log('Direct process.env.EMAIL_PORT:', process.env.EMAIL_PORT);
+        console.log('Direct process.env.EMAIL_USERNAME:', process.env.EMAIL_USERNAME);
+        console.log('==================================');
+        
+        // Use direct env vars as fallback
+        const emailHost = configService.get<string>('EMAIL_HOST') || process.env.EMAIL_HOST;
+        const emailPort = configService.get<string>('EMAIL_PORT') || process.env.EMAIL_PORT;
+        const emailUsername = configService.get<string>('EMAIL_USERNAME') || process.env.EMAIL_USERNAME;
+        const emailPassword = configService.get<string>('EMAIL_PASSWORD') || process.env.EMAIL_PASSWORD;
+        
+        return {
+          transport: {
+            host: emailHost,
+            port: parseInt(emailPort, 10),
+            secure: false, // true for 465, false for other ports
+            auth: {
+              user: emailUsername,
+              pass: emailPassword,
+            },
           },
-        },
-      }),
+        };
+      },
     }),
     IamModule,
     UsersModule,

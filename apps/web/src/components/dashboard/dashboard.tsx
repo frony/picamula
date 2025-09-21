@@ -81,7 +81,7 @@ export function Dashboard() {
             </div>
             <div className="flex items-center space-x-2 md:space-x-4">
               <span className="text-sm text-gray-600 hidden md:inline">
-                Welcome, {user?.firstName}!
+                Welcome, {user?.name}!
               </span>
               <Button variant="outline" size="sm" onClick={handleLogout}>
                 <LogOut className="w-4 h-4 md:mr-2" />

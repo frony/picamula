@@ -1,9 +1,10 @@
 export const API_ENDPOINTS = {
   AUTH: {
-    LOGIN: '/auth/login',
-    REGISTER: '/auth/register',
-    LOGOUT: '/auth/logout',
-    ME: '/auth/me',
+    LOGIN: '/authentication/sign-in',
+    REGISTER: '/authentication/sign-up',
+    LOGOUT: '/authentication/logout',
+    REFRESH: '/authentication/refresh-tokens',
+    ME: '/users/me', // Users endpoint now handles user data
   },
   USERS: {
     BASE: '/users',

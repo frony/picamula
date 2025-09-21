@@ -2,6 +2,7 @@ import axios, { AxiosResponse } from 'axios'
 import { API_ENDPOINTS, LOCAL_STORAGE_KEYS } from '@junta-tribo/shared'
 import type { 
   AuthResponse, 
+  SignUpResponse,
   LoginDto, 
   RegisterDto, 
   User, 
@@ -55,7 +56,7 @@ export const authApi = {
   login: (data: LoginDto): Promise<AxiosResponse<AuthResponse>> =>
     api.post(API_ENDPOINTS.AUTH.LOGIN, data),
   
-  register: (data: RegisterDto): Promise<AxiosResponse<AuthResponse>> =>
+  register: (data: RegisterDto): Promise<AxiosResponse<SignUpResponse>> =>
     api.post(API_ENDPOINTS.AUTH.REGISTER, data),
   
   logout: (): Promise<AxiosResponse<{ message: string }>> =>
@@ -70,19 +71,19 @@ export const usersApi = {
   getAll: (): Promise<AxiosResponse<User[]>> =>
     api.get(API_ENDPOINTS.USERS.BASE),
   
-  getById: (id: string): Promise<AxiosResponse<User>> =>
+  getById: (id: number): Promise<AxiosResponse<User>> =>
     api.get(`${API_ENDPOINTS.USERS.BASE}/${id}`),
   
   updateProfile: (data: UpdateUserDto): Promise<AxiosResponse<User>> =>
     api.patch(API_ENDPOINTS.USERS.ME, data),
   
-  update: (id: string, data: UpdateUserDto): Promise<AxiosResponse<User>> =>
+  update: (id: number, data: UpdateUserDto): Promise<AxiosResponse<User>> =>
     api.patch(`${API_ENDPOINTS.USERS.BASE}/${id}`, data),
   
   deactivateProfile: (): Promise<AxiosResponse<User>> =>
     api.delete(API_ENDPOINTS.USERS.ME),
   
-  delete: (id: string): Promise<AxiosResponse<void>> =>
+  delete: (id: number): Promise<AxiosResponse<void>> =>
     api.delete(`${API_ENDPOINTS.USERS.BASE}/${id}`),
 }
 

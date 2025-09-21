@@ -27,6 +27,8 @@ import { User, UserRedux } from './entities/user.entity';
 import { Roles } from '../iam/authorization/decorators/roles.decorator';
 import { Role } from './enums/role.enum';
 import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ActiveUser } from '../iam/decorators/active-user.decorator';
+import { ActiveUserData } from '../iam/interfaces/active-user-data.interface';
 
 // @ApiBearerAuth('JWT-auth')
 @ApiTags('users')
@@ -68,6 +70,24 @@ export class UsersController {
   async findAll() {
     const allUsers = await this.usersService.findAll();
     return allUsers;
+  }
+
+  @ApiResponse({
+    status: 200,
+    description: 'Get current user data',
+    type: UserRedux,
+  })
+  @ApiOperation({
+    summary: 'Get current authenticated user data',
+  })
+  @HttpCode(HttpStatus.OK)
+  @Get('me')
+  async getCurrentUser(@ActiveUser() user: ActiveUserData): Promise<UserRedux> {
+    const currentUser = await this.usersService.findOne(user.sub);
+    if (!currentUser) {
+      throw new NotFoundException(`User not found`);
+    }
+    return currentUser;
   }
 
   @ApiResponse({

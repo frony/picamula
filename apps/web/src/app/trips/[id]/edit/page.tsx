@@ -51,7 +51,7 @@ export default function EditTripPage({ params }: EditTripPageProps) {
       setTrip(response.data)
       
       // Check if user is the owner
-      if (response.data.owner.id !== (user as any)?.userId) {
+      if (response.data.owner.id !== user?.id) {
         toast({
           title: 'Access Denied',
           description: 'You can only edit trips that you own',
@@ -139,7 +139,7 @@ export default function EditTripPage({ params }: EditTripPageProps) {
             </div>
             <div className="flex items-center space-x-2 md:space-x-4">
               <span className="text-sm text-gray-600 hidden md:inline">
-                Welcome, {user?.firstName}!
+                Welcome, {user?.name}!
               </span>
             </div>
           </div>

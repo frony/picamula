@@ -30,14 +30,18 @@ export const useAuth = create<AuthState>()(
         try {
           set({ isLoading: true })
           const response = await authApi.login(credentials)
-          const { access_token, user }: AuthResponse = response.data
+          const { accessToken } = response.data
 
           // Store token in localStorage
-          localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, access_token)
+          localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, accessToken)
+          
+          // Get user data separately
+          const userResponse = await authApi.me()
+          const user = userResponse.data
           
           set({
             user,
-            token: access_token,
+            token: accessToken,
             isAuthenticated: true,
             isLoading: false,
           })
@@ -51,17 +55,17 @@ export const useAuth = create<AuthState>()(
         try {
           set({ isLoading: true })
           const response = await authApi.register(userData)
-          const { access_token, user }: AuthResponse = response.data
-
-          // Store token in localStorage
-          localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, access_token)
-
+          const signUpResponse = response.data
+          
+          // IAM sign-up doesn't auto-login, just returns user info
           set({
-            user,
-            token: access_token,
-            isAuthenticated: true,
+            user: null,
+            token: null,
+            isAuthenticated: false,
             isLoading: false,
           })
+          
+          return signUpResponse // Return for success message
         } catch (error) {
           set({ isLoading: false })
           throw error
