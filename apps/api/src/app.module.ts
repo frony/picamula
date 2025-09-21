@@ -2,7 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CacheModule } from '@nestjs/cache-manager';
-import { AuthModule } from './auth/auth.module';
+import { MailerModule } from '@nestjs-modules/mailer';
+import { IamModule } from './iam/iam.module';
 import { UsersModule } from './users/users.module';
 import { TripsModule } from './trips/trips.module';
 import * as redisStore from 'cache-manager-redis-store';
@@ -53,7 +54,22 @@ import * as redisStore from 'cache-manager-redis-store';
       port: parseInt(process.env.REDIS_PORT, 10) || 6379,
       password: process.env.REDIS_PASSWORD,
     }),
-    AuthModule,
+    MailerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        transport: {
+          host: configService.get<string>('EMAIL_HOST'),
+          port: parseInt(configService.get<string>('EMAIL_PORT'), 10),
+          secure: false, // true for 465, false for other ports
+          auth: {
+            user: configService.get<string>('EMAIL_USERNAME'),
+            pass: configService.get<string>('EMAIL_PASSWORD'),
+          },
+        },
+      }),
+    }),
+    IamModule,
     UsersModule,
     TripsModule,
   ],
