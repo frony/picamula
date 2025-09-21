@@ -6,9 +6,10 @@ import {
   PermissionType,
 } from '../../iam/authorization/permission.type';
 import { ApiKey } from '../api-keys/entities/api-key.entity';
+import { Trip } from '../../trips/entities/trip.entity';
 // import { Video } from '../../video/entities/video.entity';
 import { ApiProperty } from '@nestjs/swagger';
-import { BaseEntity } from '../../common/entities/base.entity';
+import { BaseEntity } from '../../common/entites/base.entity';
 
 @Entity()
 export class User extends BaseEntity {
@@ -75,7 +76,7 @@ export class User extends BaseEntity {
     description: 'OAuth token from Google',
   })
   @Column({ nullable: true })
-  googleId: string;
+  googleId?: string;
 
   /**
    * NOTE: Adding both Role and permissions
@@ -104,6 +105,13 @@ export class User extends BaseEntity {
   })
   @Column({ name: 'is_verified', default: false })
   isVerified: boolean = false;
+
+  @ApiProperty({
+    example: '[Trip]',
+    description: 'List of trips created by the user',
+  })
+  @OneToMany(() => Trip, (trip) => trip.owner)
+  trips: Trip[];
 
   // @ApiProperty({
   //   example: '[Video]',

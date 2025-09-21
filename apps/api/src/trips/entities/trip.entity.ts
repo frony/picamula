@@ -61,7 +61,7 @@ export class Trip {
   owner: User;
 
   @Column()
-  ownerId: string;
+  ownerId: number;
 
   @CreateDateColumn()
   createdAt: Date;
