@@ -138,7 +138,7 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
     )
   }
 
-  const isOwner = trip.owner?.id === user?.id
+  const isOwner = !!(trip.owner?.id && user?.id && trip.owner.id === user.id)
   const startDate = new Date(trip.startDate)
   const endDate = new Date(trip.endDate)
   const today = new Date()
