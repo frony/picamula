@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
-import { formatDateRange, calculateTripDuration } from '@/lib/utils'
+import { formatDateRange, calculateTripDuration, checkAuthStatus } from '@/lib/utils'
 import { TRIP_STATUS_LABELS } from '@junta-tribo/shared'
 import type { Trip } from '@junta-tribo/shared'
 import { 
@@ -73,6 +73,52 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
       router.push('/')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleAddNote = async () => {
+    try {
+      const isAuthenticated = await checkAuthStatus()
+      if (!isAuthenticated) {
+        toast({
+          title: 'Authentication Required',
+          description: 'Your session has expired. Please log in again.',
+          variant: 'destructive',
+        })
+        router.push('/login')
+        return
+      }
+      
+      router.push(`/trips/${params.id}/notes/add`)
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to verify authentication. Please try again.',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleEditNote = async (noteId: string) => {
+    try {
+      const isAuthenticated = await checkAuthStatus()
+      if (!isAuthenticated) {
+        toast({
+          title: 'Authentication Required',
+          description: 'Your session has expired. Please log in again.',
+          variant: 'destructive',
+        })
+        router.push('/login')
+        return
+      }
+      
+      router.push(`/trips/${params.id}/notes/${noteId}/edit`)
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to verify authentication. Please try again.',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -384,7 +430,7 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
                 </CardDescription>
               </div>
               <Button 
-                onClick={() => router.push(`/trips/${params.id}/notes/add`)}
+                onClick={handleAddNote}
                 size="sm"
               >
                 Add Note
@@ -415,7 +461,7 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => router.push(`/trips/${params.id}/notes/${note.id}/edit`)}
+                              onClick={() => handleEditNote(note.id)}
                               className="text-gray-500 hover:text-gray-700"
                             >
                               <Edit className="w-3 h-3" />
