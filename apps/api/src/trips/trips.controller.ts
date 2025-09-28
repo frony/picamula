@@ -27,6 +27,8 @@ export class TripsController {
 
   @ApiOperation({ summary: 'Create a new trip' })
   @ApiResponse({ status: 201, description: 'Trip created successfully' })
+  @ApiResponse({ status: 404, description: 'Resource not found' })
+  @ApiResponse({ status: 403, description: 'Access denied' })
   @Post()
   create(@Body() createTripDto: CreateTripDto, @ActiveUser() user: ActiveUserData) {
     return this.tripsService.create(createTripDto, user.sub);
@@ -34,6 +36,8 @@ export class TripsController {
 
   @ApiOperation({ summary: 'Get all user trips' })
   @ApiResponse({ status: 200, description: 'Trips retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Resource not found' })
+  @ApiResponse({ status: 403, description: 'Access denied' })
   @ApiQuery({ name: 'status', required: false, enum: TripStatus })
   @Get()
   findAll(@ActiveUser() user: ActiveUserData, @Query('status') status?: string) {
@@ -45,6 +49,8 @@ export class TripsController {
 
   @ApiOperation({ summary: 'Get upcoming trips' })
   @ApiResponse({ status: 200, description: 'Upcoming trips retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Resource not found' })
+  @ApiResponse({ status: 403, description: 'Access denied' })
   @Get('upcoming')
   findUpcoming(@ActiveUser() user: ActiveUserData) {
     return this.tripsService.findUpcoming(user.sub);
