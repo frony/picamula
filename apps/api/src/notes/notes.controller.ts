@@ -17,7 +17,7 @@ import { ActiveUser } from '../iam/decorators/active-user.decorator';
 import { ActiveUserData } from '../iam/interfaces/active-user-data.interface';
 
 @ApiTags('Notes')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Auth(AuthType.Bearer)
 @Controller('trips/:tripId/notes')
 export class NotesController {

@@ -19,7 +19,7 @@ import { ActiveUser } from '../iam/decorators/active-user.decorator';
 import { ActiveUserData } from '../iam/interfaces/active-user-data.interface';
 
 @ApiTags('Trips')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Auth(AuthType.Bearer)
 @Controller('trips')
 export class TripsController {

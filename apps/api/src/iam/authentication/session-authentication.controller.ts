@@ -24,7 +24,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @ApiTags('authentication')
 @Auth(AuthType.None)
 @Controller('session-authentication')
