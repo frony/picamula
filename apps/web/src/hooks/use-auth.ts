@@ -4,17 +4,17 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { authApi } from '@/lib/api'
 import { LOCAL_STORAGE_KEYS } from '@junta-tribo/shared'
-import type { User, LoginDto, RegisterDto, AuthResponse } from '@junta-tribo/shared'
+import type { User, LoginDto, RegisterDto, AuthResponse, SignUpResponse } from '@junta-tribo/shared'
 
 interface AuthState {
-  user: AuthResponse['user'] | null
+  user: User | null
   token: string | null
   isLoading: boolean
   isAuthenticated: boolean
   login: (credentials: LoginDto) => Promise<void>
-  register: (userData: RegisterDto) => Promise<void>
+  register: (userData: RegisterDto) => Promise<SignUpResponse>
   logout: () => Promise<void>
-  setUser: (user: AuthResponse['user'] | null) => void
+  setUser: (user: User | null) => void
   setLoading: (loading: boolean) => void
 }
 
@@ -92,7 +92,7 @@ export const useAuth = create<AuthState>()(
         }
       },
 
-      setUser: (user: AuthResponse['user'] | null) => {
+      setUser: (user: User | null) => {
         set({ user, isAuthenticated: !!user })
       },
 

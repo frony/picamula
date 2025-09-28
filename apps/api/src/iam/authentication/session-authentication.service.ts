@@ -28,9 +28,10 @@ export class SessionAuthenticationService {
       throw new UnauthorizedException('Password  does not match');
     }
 
-    if (user.isVerified === false) {
-      throw new UnauthorizedException('Please verify your email before logging in');
-    }
+    // TODO: Re-enable email verification once email configuration is fixed
+    // if (user.isVerified === false) {
+    //   throw new UnauthorizedException('Please verify your email before logging in');
+    // }
 
     return user;
   }
