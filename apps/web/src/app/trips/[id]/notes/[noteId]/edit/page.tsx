@@ -3,7 +3,7 @@
 import React from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/use-auth'
-import { tripsApi } from '@/lib/api'
+import { notesApi } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
@@ -11,12 +11,12 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
 import { ArrowLeft, FileText, Calendar } from 'lucide-react'
-import type { Trip } from '@junta-tribo/shared'
+import type { Note } from '@junta-tribo/shared'
 
 interface EditNotePageProps {
   params: {
     id: string
-    noteIndex: string
+    noteId: string
   }
 }
 
@@ -24,14 +24,12 @@ export default function EditNotePage({ params }: EditNotePageProps) {
   const router = useRouter()
   const { user, isLoading: authLoading } = useAuth()
   const { toast } = useToast()
-  const [trip, setTrip] = React.useState<Trip | null>(null)
+  const [note, setNote] = React.useState<Note | null>(null)
   const [content, setContent] = React.useState('')
   const [selectedDate, setSelectedDate] = React.useState('')
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [loading, setLoading] = React.useState(true)
   const [mounted, setMounted] = React.useState(false)
-
-  const noteIndex = parseInt(params.noteIndex)
 
   // Ensure component is mounted on client side
   React.useEffect(() => {
@@ -45,50 +43,27 @@ export default function EditNotePage({ params }: EditNotePageProps) {
     }
   }, [user, authLoading, router, mounted])
 
-  // Fetch trip data and populate form
+  // Fetch note data and populate form
   React.useEffect(() => {
-    if (mounted && user && params.id) {
-      fetchTripAndNote()
+    if (mounted && user && params.id && params.noteId) {
+      fetchNote()
     }
-  }, [mounted, user, params.id, noteIndex])
+  }, [mounted, user, params.id, params.noteId])
 
-  const fetchTripAndNote = async () => {
+  const fetchNote = async () => {
     try {
       setLoading(true)
-      const response = await tripsApi.getById(params.id)
-      const tripData = response.data
-      setTrip(tripData)
+      const response = await notesApi.getById(params.id, params.noteId)
+      const noteData = response.data
+      setNote(noteData)
       
-      // Check if user is the owner
-      if (tripData.owner.id !== user?.id) {
-        toast({
-          title: 'Access Denied',
-          description: 'You can only edit notes for trips that you own',
-          variant: 'destructive',
-        })
-        router.push(`/trips/${params.id}`)
-        return
-      }
-
-      // Check if note exists
-      if (!tripData.notes || noteIndex >= tripData.notes.length || noteIndex < 0) {
-        toast({
-          title: 'Note Not Found',
-          description: 'The note you are trying to edit does not exist',
-          variant: 'destructive',
-        })
-        router.push(`/trips/${params.id}`)
-        return
-      }
-
       // Populate form with existing note data
-      const note = tripData.notes[noteIndex]
-      setContent(note.content)
-      setSelectedDate(new Date(note.date).toISOString().split('T')[0])
+      setContent(noteData.content)
+      setSelectedDate(new Date(noteData.date).toISOString().split('T')[0])
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: 'Failed to fetch trip details',
+        description: error.response?.data?.message || 'Failed to fetch note details',
         variant: 'destructive',
       })
       router.push(`/trips/${params.id}`)
@@ -117,7 +92,7 @@ export default function EditNotePage({ params }: EditNotePageProps) {
         date: new Date(selectedDate).toISOString()
       }
       
-      await tripsApi.updateNote(params.id, noteIndex, noteData)
+      await notesApi.update(params.id, params.noteId, noteData)
       
       toast({
         title: 'Success',
@@ -168,19 +143,19 @@ export default function EditNotePage({ params }: EditNotePageProps) {
     )
   }
 
-  if (!trip) {
+  if (!note) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="text-center py-8">
           <CardContent>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Trip not found
+              Note not found
             </h3>
             <p className="text-gray-600 mb-4">
-              The trip you're looking for doesn't exist or you don't have access to it.
+              The note you're looking for doesn't exist or you don't have access to it.
             </p>
-            <Button onClick={() => router.push('/')}>
-              Back to Dashboard
+            <Button onClick={() => router.push(`/trips/${params.id}`)}>
+              Back to Trip
             </Button>
           </CardContent>
         </Card>
@@ -205,7 +180,7 @@ export default function EditNotePage({ params }: EditNotePageProps) {
                 Back to Trip
               </Button>
               <div className="hidden md:block w-px h-6 bg-gray-300" />
-              <h1 className="text-xl md:text-2xl font-bold text-primary">PicaMula</h1>
+              <h1 className="text-xl md:text-2xl font-bold text-primary">Pica Mula</h1>
             </div>
             <div className="flex items-center space-x-2 md:space-x-4">
               <span className="text-sm text-gray-600 hidden md:inline">
@@ -226,7 +201,7 @@ export default function EditNotePage({ params }: EditNotePageProps) {
             <div>
               <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Edit Trip Note</h2>
               <p className="text-gray-600 text-sm md:text-base mt-1">
-                Update your note for {trip.title}
+                Update your note
               </p>
             </div>
           </div>
@@ -274,7 +249,7 @@ export default function EditNotePage({ params }: EditNotePageProps) {
                   required
                 />
                 <p className="text-xs text-gray-500">
-                  {content.length}/1000 characters
+                  {content.length}/2000 characters
                 </p>
               </div>
 

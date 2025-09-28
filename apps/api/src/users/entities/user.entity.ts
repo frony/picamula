@@ -7,6 +7,7 @@ import {
 } from '../../iam/authorization/permission.type';
 import { ApiKey } from '../api-keys/entities/api-key.entity';
 import { Trip } from '../../trips/entities/trip.entity';
+import { Note } from '../../notes/entities/note.entity';
 // import { Video } from '../../video/entities/video.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { BaseEntity } from '../../common/entities/base.entity';
@@ -112,6 +113,13 @@ export class User extends BaseEntity {
   })
   @OneToMany(() => Trip, (trip) => trip.owner)
   trips: Trip[];
+
+  @ApiProperty({
+    example: '[Note]',
+    description: 'List of notes created by the user',
+  })
+  @OneToMany(() => Note, (note) => note.author)
+  notes: Note[];
 
   // @ApiProperty({
   //   example: '[Video]',

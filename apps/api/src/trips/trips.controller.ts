@@ -77,30 +77,4 @@ export class TripsController {
     return this.tripsService.remove(id, user.sub);
   }
 
-  @ApiOperation({ summary: 'Add note to trip' })
-  @ApiResponse({ status: 200, description: 'Note added successfully' })
-  @ApiResponse({ status: 404, description: 'Trip not found' })
-  @ApiResponse({ status: 403, description: 'Access denied' })
-  @Post(':id/notes')
-  addNote(
-    @Param('id') id: string,
-    @Body() noteData: { content: string; date: string },
-    @ActiveUser() user: ActiveUserData
-  ) {
-    return this.tripsService.addNote(id, noteData, user.sub);
-  }
-
-  @ApiOperation({ summary: 'Update note in trip' })
-  @ApiResponse({ status: 200, description: 'Note updated successfully' })
-  @ApiResponse({ status: 404, description: 'Trip or note not found' })
-  @ApiResponse({ status: 403, description: 'Access denied' })
-  @Patch(':id/notes/:noteIndex')
-  updateNote(
-    @Param('id') id: string,
-    @Param('noteIndex') noteIndex: string,
-    @Body() noteData: { content: string; date: string },
-    @ActiveUser() user: ActiveUserData
-  ) {
-    return this.tripsService.updateNote(id, parseInt(noteIndex), noteData, user.sub);
-  }
 }

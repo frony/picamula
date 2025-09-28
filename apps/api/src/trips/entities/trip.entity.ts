@@ -5,9 +5,11 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
+import { Note } from '../../notes/entities/note.entity';
 
 export enum TripStatus {
   PLANNING = 'planning',
@@ -53,8 +55,11 @@ export class Trip {
   @Column('simple-json', { nullable: true })
   itinerary?: any[];
 
-  @Column('simple-json', { nullable: true })
-  notes?: { content: string; date: string }[];
+  @OneToMany(() => Note, (note) => note.trip, { 
+    cascade: true,
+    eager: false 
+  })
+  notes: Note[];
 
   @ManyToOne(() => User, (user) => user.trips, { eager: true })
   @JoinColumn({ name: 'ownerId' })

@@ -3,7 +3,7 @@
 import React from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/use-auth'
-import { tripsApi } from '@/lib/api'
+import { notesApi } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
@@ -59,7 +59,7 @@ export default function AddNotePage({ params }: AddNotePageProps) {
         date: new Date(selectedDate).toISOString()
       }
       
-      await tripsApi.addNote(params.id, noteData)
+      await notesApi.create(params.id, noteData)
       
       toast({
         title: 'Success',

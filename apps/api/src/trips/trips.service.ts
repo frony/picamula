@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, MoreThan } from 'typeorm';
 import { Trip } from './entities/trip.entity';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
@@ -30,6 +30,13 @@ export class TripsService {
   async findOne(id: string, userId: number): Promise<Trip> {
     const trip = await this.tripsRepository.findOne({
       where: { id },
+      relations: ['owner', 'notes', 'notes.author'],
+      order: {
+        notes: {
+          date: 'DESC',
+          createdAt: 'DESC'
+        }
+      }
     });
 
     if (!trip) {
@@ -63,39 +70,13 @@ export class TripsService {
   }
 
   async findUpcoming(userId: number): Promise<Trip[]> {
-    return await this.tripsRepository
-      .createQueryBuilder('trip')
-      .where('trip.ownerId = :userId', { userId })
-      .andWhere('trip.startDate > :now', { now: new Date() })
-      .orderBy('trip.startDate', 'ASC')
-      .getMany();
+    return await this.tripsRepository.find({
+      where: { 
+        ownerId: userId,
+        startDate: MoreThan(new Date())
+      },
+      order: { startDate: 'ASC' }
+    });
   }
 
-  async addNote(id: string, noteData: { content: string; date: string }, userId: number): Promise<Trip> {
-    const trip = await this.findOne(id, userId);
-    
-    // Initialize notes array if it doesn't exist
-    if (!trip.notes) {
-      trip.notes = [];
-    }
-    
-    // Add the new note
-    trip.notes.push(noteData);
-    
-    return await this.tripsRepository.save(trip);
-  }
-
-  async updateNote(id: string, noteIndex: number, noteData: { content: string; date: string }, userId: number): Promise<Trip> {
-    const trip = await this.findOne(id, userId);
-    
-    // Check if notes array exists and note index is valid
-    if (!trip.notes || noteIndex < 0 || noteIndex >= trip.notes.length) {
-      throw new NotFoundException(`Note at index ${noteIndex} not found`);
-    }
-    
-    // Update the note at the specified index
-    trip.notes[noteIndex] = noteData;
-    
-    return await this.tripsRepository.save(trip);
-  }
 }

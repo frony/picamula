@@ -6,6 +6,7 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { IamModule } from './iam/iam.module';
 import { UsersModule } from './users/users.module';
 import { TripsModule } from './trips/trips.module';
+import { NotesModule } from './notes/notes.module';
 import * as redisStore from 'cache-manager-redis-store';
 import * as path from 'path';
 
@@ -92,6 +93,7 @@ import * as path from 'path';
     IamModule,
     UsersModule,
     TripsModule,
+    NotesModule,
   ],
   controllers: [],
   providers: [],

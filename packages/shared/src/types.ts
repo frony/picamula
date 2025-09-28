@@ -1,3 +1,25 @@
+// Note types
+export interface Note {
+  id: string;
+  content: string;
+  date: Date;
+  tripId: string;
+  author: User;
+  authorId: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateNoteDto {
+  content: string;
+  date: string;
+}
+
+export interface UpdateNoteDto {
+  content?: string;
+  date?: string;
+}
+
 // User types
 export interface User {
   id: number; // Changed to number for IAM
@@ -44,7 +66,7 @@ export interface Trip {
   budget?: number;
   participants?: string[];
   itinerary?: any[];
-  notes?: { content: string; date: string }[];
+  notes?: Note[];
   owner: User;
   ownerId: number; // Changed to number
   createdAt: Date;

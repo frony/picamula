@@ -9,7 +9,10 @@ import type {
   Trip, 
   CreateTripDto, 
   UpdateTripDto,
-  UpdateUserDto 
+  UpdateUserDto,
+  Note,
+  CreateNoteDto,
+  UpdateNoteDto
 } from '@junta-tribo/shared'
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
@@ -108,12 +111,24 @@ export const tripsApi = {
   
   delete: (id: string): Promise<AxiosResponse<void>> =>
     api.delete(`${API_ENDPOINTS.TRIPS.BASE}/${id}`),
+}
+
+// Notes API
+export const notesApi = {
+  getAll: (tripId: string): Promise<AxiosResponse<Note[]>> =>
+    api.get(`${API_ENDPOINTS.TRIPS.BASE}/${tripId}/notes`),
   
-  addNote: (id: string, noteData: { content: string; date: string }): Promise<AxiosResponse<Trip>> =>
-    api.post(`${API_ENDPOINTS.TRIPS.BASE}/${id}/notes`, noteData),
+  getById: (tripId: string, noteId: string): Promise<AxiosResponse<Note>> =>
+    api.get(`${API_ENDPOINTS.TRIPS.BASE}/${tripId}/notes/${noteId}`),
   
-  updateNote: (id: string, noteIndex: number, noteData: { content: string; date: string }): Promise<AxiosResponse<Trip>> =>
-    api.patch(`${API_ENDPOINTS.TRIPS.BASE}/${id}/notes/${noteIndex}`, noteData),
+  create: (tripId: string, data: CreateNoteDto): Promise<AxiosResponse<Note>> =>
+    api.post(`${API_ENDPOINTS.TRIPS.BASE}/${tripId}/notes`, data),
+  
+  update: (tripId: string, noteId: string, data: UpdateNoteDto): Promise<AxiosResponse<Note>> =>
+    api.patch(`${API_ENDPOINTS.TRIPS.BASE}/${tripId}/notes/${noteId}`, data),
+  
+  delete: (tripId: string, noteId: string): Promise<AxiosResponse<void>> =>
+    api.delete(`${API_ENDPOINTS.TRIPS.BASE}/${tripId}/notes/${noteId}`),
 }
 
 export default api
