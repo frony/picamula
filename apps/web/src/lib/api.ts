@@ -2,13 +2,17 @@ import axios, { AxiosResponse } from 'axios'
 import { API_ENDPOINTS, LOCAL_STORAGE_KEYS } from '@junta-tribo/shared'
 import type { 
   AuthResponse, 
+  SignUpResponse,
   LoginDto, 
   RegisterDto, 
   User, 
   Trip, 
   CreateTripDto, 
   UpdateTripDto,
-  UpdateUserDto 
+  UpdateUserDto,
+  Note,
+  CreateNoteDto,
+  UpdateNoteDto
 } from '@junta-tribo/shared'
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
@@ -55,7 +59,7 @@ export const authApi = {
   login: (data: LoginDto): Promise<AxiosResponse<AuthResponse>> =>
     api.post(API_ENDPOINTS.AUTH.LOGIN, data),
   
-  register: (data: RegisterDto): Promise<AxiosResponse<AuthResponse>> =>
+  register: (data: RegisterDto): Promise<AxiosResponse<SignUpResponse>> =>
     api.post(API_ENDPOINTS.AUTH.REGISTER, data),
   
   logout: (): Promise<AxiosResponse<{ message: string }>> =>
@@ -70,19 +74,19 @@ export const usersApi = {
   getAll: (): Promise<AxiosResponse<User[]>> =>
     api.get(API_ENDPOINTS.USERS.BASE),
   
-  getById: (id: string): Promise<AxiosResponse<User>> =>
+  getById: (id: number): Promise<AxiosResponse<User>> =>
     api.get(`${API_ENDPOINTS.USERS.BASE}/${id}`),
   
   updateProfile: (data: UpdateUserDto): Promise<AxiosResponse<User>> =>
     api.patch(API_ENDPOINTS.USERS.ME, data),
   
-  update: (id: string, data: UpdateUserDto): Promise<AxiosResponse<User>> =>
+  update: (id: number, data: UpdateUserDto): Promise<AxiosResponse<User>> =>
     api.patch(`${API_ENDPOINTS.USERS.BASE}/${id}`, data),
   
   deactivateProfile: (): Promise<AxiosResponse<User>> =>
     api.delete(API_ENDPOINTS.USERS.ME),
   
-  delete: (id: string): Promise<AxiosResponse<void>> =>
+  delete: (id: number): Promise<AxiosResponse<void>> =>
     api.delete(`${API_ENDPOINTS.USERS.BASE}/${id}`),
 }
 
@@ -107,12 +111,24 @@ export const tripsApi = {
   
   delete: (id: string): Promise<AxiosResponse<void>> =>
     api.delete(`${API_ENDPOINTS.TRIPS.BASE}/${id}`),
+}
+
+// Notes API
+export const notesApi = {
+  getAll: (tripId: string): Promise<AxiosResponse<Note[]>> =>
+    api.get(`${API_ENDPOINTS.TRIPS.BASE}/${tripId}/notes`),
   
-  addNote: (id: string, noteData: { content: string; date: string }): Promise<AxiosResponse<Trip>> =>
-    api.post(`${API_ENDPOINTS.TRIPS.BASE}/${id}/notes`, noteData),
+  getById: (tripId: string, noteId: string): Promise<AxiosResponse<Note>> =>
+    api.get(`${API_ENDPOINTS.TRIPS.BASE}/${tripId}/notes/${noteId}`),
   
-  updateNote: (id: string, noteIndex: number, noteData: { content: string; date: string }): Promise<AxiosResponse<Trip>> =>
-    api.patch(`${API_ENDPOINTS.TRIPS.BASE}/${id}/notes/${noteIndex}`, noteData),
+  create: (tripId: string, data: CreateNoteDto): Promise<AxiosResponse<Note>> =>
+    api.post(`${API_ENDPOINTS.TRIPS.BASE}/${tripId}/notes`, data),
+  
+  update: (tripId: string, noteId: string, data: UpdateNoteDto): Promise<AxiosResponse<Note>> =>
+    api.patch(`${API_ENDPOINTS.TRIPS.BASE}/${tripId}/notes/${noteId}`, data),
+  
+  delete: (tripId: string, noteId: string): Promise<AxiosResponse<void>> =>
+    api.delete(`${API_ENDPOINTS.TRIPS.BASE}/${tripId}/notes/${noteId}`),
 }
 
 export default api

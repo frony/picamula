@@ -6,63 +6,169 @@ import {
   Patch,
   Param,
   Delete,
-  UseGuards,
-  Request,
+  HttpCode,
+  HttpStatus,
+  BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
+import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Auth } from '../iam/authentication/decorators/auth.decorator';
+import { AuthType } from '../iam/authentication/enums/auth-type.enum';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
-@ApiTags('Users')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+import { User, UserRedux } from './entities/user.entity';
+import { Roles } from '../iam/authorization/decorators/roles.decorator';
+import { Role } from './enums/role.enum';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ActiveUser } from '../iam/decorators/active-user.decorator';
+import { ActiveUserData } from '../iam/interfaces/active-user-data.interface';
+
+// @ApiBearerAuth('JWT-auth')
+@ApiTags('users')
+@Auth(AuthType.Bearer, AuthType.ApiKey)
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @ApiOperation({ summary: 'Get all users' })
-  @ApiResponse({ status: 200, description: 'Users retrieved successfully' })
+  @ApiResponse({
+    status: 201,
+    description: 'Create a new user',
+    type: UserRedux,
+  })
+  @ApiOperation({
+    summary: 'Create a user in the database',
+  })
+  // @HttpCode(HttpStatus.OK)
+  @Roles(Role.Admin)
+  @Post()
+  create(@Body() createUserDto: CreateUserDto): Promise<UserRedux> {
+    try {
+      return this.usersService.create(createUserDto);
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  @ApiResponse({
+    status: 200,
+    description: 'Find all users',
+    type: [UserRedux],
+  })
+  @ApiOperation({
+    summary: 'Find all users',
+  })
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.Admin)
   @Get()
-  findAll() {
-    return this.usersService.findAll();
+  async findAll() {
+    const allUsers = await this.usersService.findAll();
+    return allUsers;
   }
 
-  @ApiOperation({ summary: 'Get user by ID' })
-  @ApiResponse({ status: 200, description: 'User retrieved successfully' })
-  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({
+    status: 200,
+    description: 'Get current user data',
+    type: UserRedux,
+  })
+  @ApiOperation({
+    summary: 'Get current authenticated user data',
+  })
+  @HttpCode(HttpStatus.OK)
+  @Get('me')
+  async getCurrentUser(@ActiveUser() user: ActiveUserData): Promise<UserRedux> {
+    const currentUser = await this.usersService.findOne(user.sub);
+    if (!currentUser) {
+      throw new NotFoundException(`User not found`);
+    }
+    return currentUser;
+  }
+
+  @ApiResponse({
+    status: 200,
+    description: 'Find a user by ID',
+    type: UserRedux,
+  })
+  @ApiOperation({
+    summary: 'Find a user by ID',
+  })
+  @HttpCode(HttpStatus.OK)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findById(id);
+  async findOne(@Param('id') id: string): Promise<UserRedux> {
+    const user: UserRedux = await this.usersService.findOne(+id);
+    return user;
   }
 
-  @ApiOperation({ summary: 'Update current user profile' })
-  @ApiResponse({ status: 200, description: 'User updated successfully' })
-  @Patch('me')
-  updateProfile(@Request() req, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(req.user.userId, updateUserDto);
+  @ApiResponse({
+    status: 200,
+    description: 'Find a user by ID',
+    type: UserRedux,
+  })
+  @ApiOperation({
+    summary: 'Find a user by ID',
+  })
+  @HttpCode(HttpStatus.OK)
+  @Get('findOneEmail/:id')
+  async findOneByEmail(@Param('email') email: string): Promise<UserRedux> {
+    const user: UserRedux = await this.usersService.findOneByEmail(email);
+    return user;
   }
 
-  @ApiOperation({ summary: 'Update user by ID' })
-  @ApiResponse({ status: 200, description: 'User updated successfully' })
-  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({
+    status: 200,
+    description: 'Verify user email with token',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Email verified successfully' }
+      }
+    }
+  })
+  @ApiOperation({
+    summary: 'Verify user email with token from email',
+  })
+  @Auth(AuthType.None)
+  @Post('verify-email')
+  async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto): Promise<{ message: string }> {
+    try {
+      return await this.usersService.verifyEmail(verifyEmailDto);
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  @ApiOperation({
+    summary: "Update a user's data",
+  })
+  @Roles(Role.Admin)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(id, updateUserDto);
+  async update(
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateUserDto,
+  ): Promise<UserRedux> {
+    try {
+      const response = await this.usersService.update(+id, updateUserDto);
+      return response;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw new NotFoundException(`User #${id} not found`);
+      }
+      throw new BadRequestException(error.message);
+    }
   }
 
-  @ApiOperation({ summary: 'Deactivate current user' })
-  @ApiResponse({ status: 200, description: 'User deactivated successfully' })
-  @Delete('me')
-  deactivateProfile(@Request() req) {
-    return this.usersService.deactivate(req.user.userId);
-  }
-
-  @ApiOperation({ summary: 'Delete user by ID' })
-  @ApiResponse({ status: 200, description: 'User deleted successfully' })
-  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiOperation({
+    summary: 'Delete a user',
+  })
+  @Roles(Role.Admin)
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.usersService.remove(id);
+    return this.usersService.remove(+id);
   }
 }

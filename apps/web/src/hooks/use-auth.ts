@@ -4,17 +4,17 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { authApi } from '@/lib/api'
 import { LOCAL_STORAGE_KEYS } from '@junta-tribo/shared'
-import type { User, LoginDto, RegisterDto, AuthResponse } from '@junta-tribo/shared'
+import type { User, LoginDto, RegisterDto, AuthResponse, SignUpResponse } from '@junta-tribo/shared'
 
 interface AuthState {
-  user: AuthResponse['user'] | null
+  user: User | null
   token: string | null
   isLoading: boolean
   isAuthenticated: boolean
   login: (credentials: LoginDto) => Promise<void>
-  register: (userData: RegisterDto) => Promise<void>
+  register: (userData: RegisterDto) => Promise<SignUpResponse>
   logout: () => Promise<void>
-  setUser: (user: AuthResponse['user'] | null) => void
+  setUser: (user: User | null) => void
   setLoading: (loading: boolean) => void
 }
 
@@ -30,14 +30,18 @@ export const useAuth = create<AuthState>()(
         try {
           set({ isLoading: true })
           const response = await authApi.login(credentials)
-          const { access_token, user }: AuthResponse = response.data
+          const { accessToken } = response.data
 
           // Store token in localStorage
-          localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, access_token)
+          localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, accessToken)
+          
+          // Get user data separately
+          const userResponse = await authApi.me()
+          const user = userResponse.data
           
           set({
             user,
-            token: access_token,
+            token: accessToken,
             isAuthenticated: true,
             isLoading: false,
           })
@@ -51,17 +55,17 @@ export const useAuth = create<AuthState>()(
         try {
           set({ isLoading: true })
           const response = await authApi.register(userData)
-          const { access_token, user }: AuthResponse = response.data
-
-          // Store token in localStorage
-          localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, access_token)
-
+          const signUpResponse = response.data
+          
+          // IAM sign-up doesn't auto-login, just returns user info
           set({
-            user,
-            token: access_token,
-            isAuthenticated: true,
+            user: null,
+            token: null,
+            isAuthenticated: false,
             isLoading: false,
           })
+          
+          return signUpResponse // Return for success message
         } catch (error) {
           set({ isLoading: false })
           throw error
@@ -88,7 +92,7 @@ export const useAuth = create<AuthState>()(
         }
       },
 
-      setUser: (user: AuthResponse['user'] | null) => {
+      setUser: (user: User | null) => {
         set({ user, isAuthenticated: !!user })
       },
 

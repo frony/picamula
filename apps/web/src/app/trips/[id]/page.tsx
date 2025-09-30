@@ -3,12 +3,12 @@
 import React from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/use-auth'
-import { tripsApi } from '@/lib/api'
+import { tripsApi, notesApi } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
-import { formatDateRange, calculateTripDuration } from '@/lib/utils'
+import { formatDateRange, calculateTripDuration, checkAuthStatus } from '@/lib/utils'
 import { TRIP_STATUS_LABELS } from '@junta-tribo/shared'
 import type { Trip } from '@junta-tribo/shared'
 import { 
@@ -21,7 +21,8 @@ import {
   User,
   Edit,
   Share2,
-  MoreHorizontal
+  MoreHorizontal,
+  Trash2
 } from 'lucide-react'
 
 interface TripDetailsPageProps {
@@ -75,6 +76,76 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
     }
   }
 
+  const handleAddNote = async () => {
+    try {
+      const isAuthenticated = await checkAuthStatus()
+      if (!isAuthenticated) {
+        toast({
+          title: 'Authentication Required',
+          description: 'Your session has expired. Please log in again.',
+          variant: 'destructive',
+        })
+        router.push('/login')
+        return
+      }
+      
+      router.push(`/trips/${params.id}/notes/add`)
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to verify authentication. Please try again.',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleEditNote = async (noteId: string) => {
+    try {
+      const isAuthenticated = await checkAuthStatus()
+      if (!isAuthenticated) {
+        toast({
+          title: 'Authentication Required',
+          description: 'Your session has expired. Please log in again.',
+          variant: 'destructive',
+        })
+        router.push('/login')
+        return
+      }
+      
+      router.push(`/trips/${params.id}/notes/${noteId}/edit`)
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to verify authentication. Please try again.',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleDeleteNote = async (noteId: string) => {
+    if (!confirm('Are you sure you want to delete this note? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      await notesApi.delete(params.id, noteId)
+      
+      toast({
+        title: 'Success',
+        description: 'Note deleted successfully',
+      })
+      
+      // Refresh trip data to update notes list
+      await fetchTrip()
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to delete note',
+        variant: 'destructive',
+      })
+    }
+  }
+
   // Show loading until mounted and auth is resolved
   if (!mounted || authLoading || loading) {
     return (
@@ -113,7 +184,7 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
     )
   }
 
-  const isOwner = trip.owner.id === (user as any)?.userId
+  const isOwner = !!(trip.owner?.id && user?.id && trip.owner.id === user.id)
   const startDate = new Date(trip.startDate)
   const endDate = new Date(trip.endDate)
   const today = new Date()
@@ -155,7 +226,7 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
             </div>
             <div className="flex items-center space-x-2 md:space-x-4">
               <span className="text-sm text-gray-600 hidden md:inline">
-                Welcome, {user?.firstName}!
+                Welcome, {user?.name}!
               </span>
               {isOwner && (
                 <div className="flex items-center space-x-2">
@@ -196,7 +267,7 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
               </div>
               <div className="flex items-center text-gray-600">
                 <User className="w-4 h-4 mr-2" />
-                <span className="text-sm">Created by {trip.owner.firstName} {trip.owner.lastName}</span>
+                <span className="text-sm">Created by {trip.owner.name}</span>
               </div>
             </div>
           </div>
@@ -262,7 +333,7 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Trip Owner</p>
-                  <p className="font-medium">{trip.owner.firstName} {trip.owner.lastName}</p>
+                  <p className="font-medium">{trip.owner.name}</p>
                 </div>
                 {trip.participants && trip.participants.length > 0 && (
                   <div>
@@ -359,7 +430,7 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
                 </CardDescription>
               </div>
               <Button 
-                onClick={() => router.push(`/trips/${params.id}/notes/add`)}
+                onClick={handleAddNote}
                 size="sm"
               >
                 Add Note
@@ -369,26 +440,41 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
           <CardContent>
             {trip.notes && trip.notes.length > 0 ? (
               <div className="space-y-4">
-                {trip.notes.map((note, index) => (
-                  <div key={index} className="border-l-4 border-orange-200 pl-4 py-3">
+                {trip.notes.map((note) => (
+                  <div key={note.id} className="border-l-4 border-orange-200 pl-4 py-3">
                     <div className="bg-gray-50 rounded-lg p-4">
                       <div className="flex justify-between items-start mb-2">
-                        <span className="text-xs text-gray-500 font-medium">
-                          {new Date(note.date).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}
-                        </span>
+                        <div className="flex flex-col">
+                          <span className="text-xs text-gray-500 font-medium">
+                            {new Date(note.date).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })}
+                          </span>
+                          <span className="text-xs text-gray-400 mt-1">
+                            by {note.author?.name || 'Unknown'}
+                          </span>
+                        </div>
                         {isOwner && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => router.push(`/trips/${params.id}/notes/${index}/edit`)}
-                            className="text-gray-500 hover:text-gray-700"
-                          >
-                            <Edit className="w-3 h-3" />
-                          </Button>
+                          <div className="flex items-center space-x-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditNote(note.id)}
+                              className="text-gray-500 hover:text-gray-700"
+                            >
+                              <Edit className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteNote(note.id)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
                         )}
                       </div>
                       <p className="text-gray-700 whitespace-pre-wrap">{note.content}</p>

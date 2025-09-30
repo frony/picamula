@@ -1,27 +1,49 @@
+// Note types
+export interface Note {
+  id: string;
+  content: string;
+  date: Date;
+  tripId: string;
+  author: User;
+  authorId: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateNoteDto {
+  content: string;
+  date: string;
+}
+
+export interface UpdateNoteDto {
+  content?: string;
+  date?: string;
+}
+
 // User types
 export interface User {
-  id: string;
+  id: number; // Changed to number for IAM
+  name: string; // IAM uses 'name' instead of firstName/lastName
   email: string;
-  firstName: string;
-  lastName: string;
-  avatar?: string;
-  isActive: boolean;
+  phone?: string;
+  role: string;
+  isVerified: boolean;
+  isTfaEnabled: boolean;
+  permissions: string[];
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface CreateUserDto {
   email: string;
-  firstName: string;
-  lastName: string;
+  name: string; // Changed to match IAM
   password: string;
-  avatar?: string;
+  phone?: string;
 }
 
 export interface UpdateUserDto {
-  firstName?: string;
-  lastName?: string;
-  avatar?: string;
+  name?: string;
+  phone?: string;
 }
 
 // Trip types
@@ -44,9 +66,9 @@ export interface Trip {
   budget?: number;
   participants?: string[];
   itinerary?: any[];
-  notes?: { content: string; date: string }[];
+  notes?: Note[];
   owner: User;
-  ownerId: string;
+  ownerId: number; // Changed to number
   createdAt: Date;
   updatedAt: Date;
 }
@@ -79,24 +101,25 @@ export interface UpdateTripDto {
 export interface LoginDto {
   email: string;
   password: string;
+  tfaCode?: string; // Optional 2FA code
 }
 
 export interface RegisterDto {
   email: string;
-  firstName: string;
-  lastName: string;
+  name: string; // Changed to match IAM
   password: string;
+  phone?: string;
 }
 
 export interface AuthResponse {
-  access_token: string;
-  user: {
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    avatar?: string;
-  };
+  accessToken: string;
+  refreshToken?: string;
+}
+
+export interface SignUpResponse {
+  name: string;
+  email: string;
+  permissions: string[];
 }
 
 // API Response types
