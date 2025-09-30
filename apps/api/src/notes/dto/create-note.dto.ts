@@ -19,3 +19,4 @@ export class CreateNoteDto {
   @IsDateString()
   date: string;
 }
+
