@@ -2,9 +2,9 @@
   "apps": [
     {
       "name": "picamula-api",
-      "cwd": "./apps/api",
+      "cwd": "./",
       "script": "npm",
-      "args": "run start:prod",
+      "args": "run start:prod:api",
       "env": {
         "NODE_ENV": "production",
         "PORT": "8001"
@@ -19,9 +19,9 @@
     },
     {
       "name": "picamula-web",
-      "cwd": "./apps/web",
+      "cwd": "./",
       "script": "npm",
-      "args": "run start",
+      "args": "run start:prod:web",
       "env": {
         "NODE_ENV": "production",
         "PORT": "3003",
