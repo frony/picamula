@@ -22,11 +22,18 @@ export class User extends BaseEntity {
   id: number;
 
   @ApiProperty({
-    example: 'my_username',
-    description: 'The username to display',
+    example: 'John',
+    description: "The user's first name",
   })
-  @Column({ nullable: true })
-  name: string;
+  @Column()
+  firstName: string;
+
+  @ApiProperty({
+    example: 'Doe',
+    description: "The user's last name",
+  })
+  @Column()
+  lastName: string;
 
   @ApiProperty({
     example: 'joe.doe@example.com',
@@ -143,10 +150,16 @@ export class UserRedux {
   id: number;
 
   @ApiProperty({
-    example: 'Joe DOe',
-    description: `The user's name`,
+    example: 'John',
+    description: `The user's first name`,
   })
-  name: string;
+  firstName: string;
+
+  @ApiProperty({
+    example: 'Doe',
+    description: `The user's last name`,
+  })
+  lastName: string;
 
   @ApiProperty({
     example: 'joe.doe@example.com',

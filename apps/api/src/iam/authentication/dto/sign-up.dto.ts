@@ -30,9 +30,16 @@ export class SignUpDto extends PartialType(CreateUserDto) {
   password: string;
 
   @ApiProperty({
-    example: 'Joe Doe',
-    description: 'The user name',
+    example: 'John',
+    description: 'The user first name',
   })
   @IsString()
-  name: string;
+  firstName: string;
+
+  @ApiProperty({
+    example: 'Doe',
+    description: 'The user last name',
+  })
+  @IsString()
+  lastName: string;
 }

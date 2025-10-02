@@ -28,7 +28,7 @@ import { UsersService } from '../../users/users.service';
 import { AuthTokens } from './entities/auth-tokens.entity';
 import { CreateUserDto } from '../../users/dto/create-user.dto';
 type CreatedUser = Partial<
-  Pick<CreateUserDto & User, 'name' | 'email' | 'permissions'>
+  Pick<CreateUserDto & User, 'firstName' | 'lastName' | 'email' | 'permissions'>
 >;
 
 @Injectable()
@@ -55,24 +55,26 @@ export class AuthenticationService {
   async signUp(signUpDto: SignUpDto): Promise<CreatedUser> {
     try {
       const password = await this.hashingService.hash(signUpDto.password);
-      const { email, phone, name: userName } = signUpDto;
+      const { email, phone, firstName, lastName } = signUpDto;
       const newUser = {
         email,
         password,
         phone,
-        name: userName,
+        firstName,
+        lastName,
       };
 
-      this.logger.log({ email, phone, userName });
+      this.logger.log({ email, phone, firstName, lastName });
 
       const {
-        name,
+        firstName: createdFirstName,
+        lastName: createdLastName,
         email: createdEmail,
         permissions,
       }: CreatedUser = await this.usersService.create({
         ...newUser,
       });
-      return { name, email: createdEmail, permissions };
+      return { firstName: createdFirstName, lastName: createdLastName, email: createdEmail, permissions };
     } catch (error) {
       // TODO: Move this to a constants file
       const pgUniqueViolationErrorCode = '23505';
@@ -80,7 +82,7 @@ export class AuthenticationService {
         message: error.message,
         code: error.code,
         stack: error.stack,
-        signUpDto: { email: signUpDto.email, name: signUpDto.name, phone: signUpDto.phone }
+        signUpDto: { email: signUpDto.email, firstName: signUpDto.firstName, lastName: signUpDto.lastName, phone: signUpDto.phone }
       });
       if (error.code === pgUniqueViolationErrorCode) {
         throw new ConflictException('Sign up failed. Please check your details or try a different email.');
@@ -134,8 +136,8 @@ export class AuthenticationService {
         throw new UnauthorizedException('Invalid 2FA code');
       }
     }
-    const { email, name } = user;
-    this.logger.log({ email, name });
+    const { email, firstName, lastName } = user;
+    this.logger.log({ email, firstName, lastName });
     return await this.generateTokens(user, ipAddress, userAgent);
   }
 
@@ -175,7 +177,8 @@ export class AuthenticationService {
         this.jwtConfiguration.accessTokenTtl,
         {
           email: user.email,
-          name: user.name,
+          firstName: user.firstName,
+          lastName: user.lastName,
           role: user.role,
           // Not recommended: it can add a long string of permissions to the token
           // and the token won't be lightweight.

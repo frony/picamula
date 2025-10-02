@@ -9,9 +9,14 @@ export interface ActiveUserData {
   sub: number;
 
   /**
-   * The subject's (user) name
+   * The subject's (user) first name
    */
-  name?: string;
+  firstName?: string;
+
+  /**
+   * The subject's (user) last name
+   */
+  lastName?: string;
 
   /**
    * The subject's (user) email

@@ -226,7 +226,7 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
             </div>
             <div className="flex items-center space-x-2 md:space-x-4">
               <span className="text-sm text-gray-600 hidden md:inline">
-                Welcome, {user?.name}!
+                Welcome, {user?.firstName} {user?.lastName}!
               </span>
               {isOwner && (
                 <div className="flex items-center space-x-2">
@@ -267,7 +267,7 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
               </div>
               <div className="flex items-center text-gray-600">
                 <User className="w-4 h-4 mr-2" />
-                <span className="text-sm">Created by {trip.owner.name}</span>
+                <span className="text-sm">Created by {trip.owner.firstName} {trip.owner.lastName}</span>
               </div>
             </div>
           </div>
@@ -333,7 +333,7 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Trip Owner</p>
-                  <p className="font-medium">{trip.owner.name}</p>
+                  <p className="font-medium">{trip.owner.firstName} {trip.owner.lastName}</p>
                 </div>
                 {trip.participants && trip.participants.length > 0 && (
                   <div>
@@ -453,7 +453,7 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
                             })}
                           </span>
                           <span className="text-xs text-gray-400 mt-1">
-                            by {note.author?.name || 'Unknown'}
+                            by {note.author ? `${note.author.firstName} ${note.author.lastName}` : 'Unknown'}
                           </span>
                         </div>
                         {isOwner && (

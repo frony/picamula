@@ -27,8 +27,8 @@ export class UsersService {
   ) {}
 
   private getUserRedux(user) {
-    const { id, name, email, phone, role, permissions, isTfaEnabled } = user;
-    return { id, name, email, phone, role, permissions, isTfaEnabled };
+    const { id, firstName, lastName, email, phone, role, permissions, isTfaEnabled } = user;
+    return { id, firstName, lastName, email, phone, role, permissions, isTfaEnabled };
   }
 
   /**
@@ -70,7 +70,7 @@ export class UsersService {
         message: error.message,
         code: error.code,
         stack: error.stack,
-        createUserDto: { email: createUserDto.email, name: createUserDto.name, phone: createUserDto.phone }
+        createUserDto: { email: createUserDto.email, firstName: createUserDto.firstName, lastName: createUserDto.lastName, phone: createUserDto.phone }
       });
       if (error.code === '23505') throw error; // Let unique constraint errors bubble up
       throw new BadRequestException(error.message);
