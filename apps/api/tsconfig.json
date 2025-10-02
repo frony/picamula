@@ -25,6 +25,6 @@
       "@junta-tribo/shared": ["../../packages/shared/src"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "typeorm-cli.config.ts"],
   "exclude": ["node_modules", "dist", "test"]
 }
