@@ -56,7 +56,7 @@ export default function AddNotePage({ params }: AddNotePageProps) {
     try {
       const noteData = {
         content: content.trim(),
-        date: new Date(selectedDate).toISOString()
+        date: selectedDate + 'T12:00:00.000Z'
       }
       
       await notesApi.create(params.id, noteData)
