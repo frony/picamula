@@ -23,7 +23,8 @@ export interface UpdateNoteDto {
 // User types
 export interface User {
   id: number; // Changed to number for IAM
-  name: string; // IAM uses 'name' instead of firstName/lastName
+  firstName: string;
+  lastName: string;
   email: string;
   phone?: string;
   role: string;
@@ -36,13 +37,15 @@ export interface User {
 
 export interface CreateUserDto {
   email: string;
-  name: string; // Changed to match IAM
+  firstName: string;
+  lastName: string;
   password: string;
   phone?: string;
 }
 
 export interface UpdateUserDto {
-  name?: string;
+  firstName?: string;
+  lastName?: string;
   phone?: string;
 }
 
@@ -106,7 +109,8 @@ export interface LoginDto {
 
 export interface RegisterDto {
   email: string;
-  name: string; // Changed to match IAM
+  firstName: string;
+  lastName: string;
   password: string;
   phone?: string;
 }
@@ -117,7 +121,8 @@ export interface AuthResponse {
 }
 
 export interface SignUpResponse {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   permissions: string[];
 }

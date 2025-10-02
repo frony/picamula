@@ -189,9 +189,9 @@ export class PasswordService {
   async updatePassword(activeUser: ActiveUserData, password: string) {
     try {
       // ====================================
-      // Get email and name from ActiveUser
+      // Get email and names from ActiveUser
       // ====================================
-      const { email, name } = activeUser;
+      const { email, firstName, lastName } = activeUser;
 
       // ==================
       // Get user from DB

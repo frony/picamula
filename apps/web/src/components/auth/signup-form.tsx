@@ -26,7 +26,7 @@ export function SignupForm() {
       const result = await register(data)
       toast({
         title: 'Success',
-        description: `Account created successfully! Welcome ${result.name}. Please log in to continue.`,
+        description: `Account created successfully! Welcome ${result.firstName} ${result.lastName}. Please log in to continue.`,
       })
       router.push('/login')
     } catch (error: any) {
@@ -60,14 +60,29 @@ export function SignupForm() {
       <div>
         <Input
           type="text"
-          placeholder="Full Name"
-          {...registerField('name', {
-            required: 'Name is required',
+          placeholder="First Name"
+          {...registerField('firstName', {
+            required: 'First name is required',
           })}
         />
-        {errors.name && (
+        {errors.firstName && (
           <p className="text-sm text-red-500 mt-1">
-            {errors.name.message}
+            {errors.firstName.message}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <Input
+          type="text"
+          placeholder="Last Name"
+          {...registerField('lastName', {
+            required: 'Last name is required',
+          })}
+        />
+        {errors.lastName && (
+          <p className="text-sm text-red-500 mt-1">
+            {errors.lastName.message}
           </p>
         )}
       </div>

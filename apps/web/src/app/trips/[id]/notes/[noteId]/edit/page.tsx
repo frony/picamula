@@ -184,7 +184,7 @@ export default function EditNotePage({ params }: EditNotePageProps) {
             </div>
             <div className="flex items-center space-x-2 md:space-x-4">
               <span className="text-sm text-gray-600 hidden md:inline">
-                Welcome, {user?.name}!
+                Welcome, {user?.firstName} {user?.lastName}!
               </span>
             </div>
           </div>

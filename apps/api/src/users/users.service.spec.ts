@@ -18,7 +18,8 @@ const createMockRepository = <T = any>(): MockRepository<T> => ({
 
 const createdUser: UserRedux = {
   id: 1,
-  name: 'Joe Doe',
+  firstName: 'Joe',
+  lastName: 'Doe',
   email: 'joe.doe@example.com',
   phone: '555-987-6543',
   role: Role.Regular,
@@ -27,7 +28,8 @@ const createdUser: UserRedux = {
 };
 
 const newUserInput = {
-  name: 'Joe Doe',
+  firstName: 'Joe',
+  lastName: 'Doe',
   email: 'joe.doe@example.com',
   password: 'P@ssw0rd123',
   confirmPassword: 'P@ssw0rd123',
