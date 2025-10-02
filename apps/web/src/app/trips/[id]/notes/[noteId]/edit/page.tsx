@@ -59,7 +59,8 @@ export default function EditNotePage({ params }: EditNotePageProps) {
       
       // Populate form with existing note data
       setContent(noteData.content)
-      setSelectedDate(new Date(noteData.date).toISOString().split('T')[0])
+      // Extract just the date part without timezone conversion
+      setSelectedDate(String(noteData.date).split('T')[0])
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -89,7 +90,7 @@ export default function EditNotePage({ params }: EditNotePageProps) {
     try {
       const noteData = {
         content: content.trim(),
-        date: new Date(selectedDate).toISOString()
+        date: selectedDate + 'T12:00:00.000Z'
       }
       
       await notesApi.update(params.id, params.noteId, noteData)
