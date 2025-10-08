@@ -16,6 +16,7 @@ interface AuthState {
   logout: () => Promise<void>
   setUser: (user: User | null) => void
   setLoading: (loading: boolean) => void
+  updateToken: (token: string) => void
 }
 
 export const useAuth = create<AuthState>()(
@@ -98,6 +99,13 @@ export const useAuth = create<AuthState>()(
 
       setLoading: (isLoading: boolean) => {
         set({ isLoading })
+      },
+
+      updateToken: (token: string) => {
+        set({ token })
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, token)
+        }
       },
     }),
     {

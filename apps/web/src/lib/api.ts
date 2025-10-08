@@ -15,6 +15,20 @@ import type {
   UpdateNoteDto
 } from '@junta-tribo/shared'
 
+// Function to get auth store for token updates
+const getAuthStore = () => {
+  if (typeof window !== 'undefined') {
+    try {
+      // Dynamic import to avoid SSR issues
+      const { useAuth } = require('@/hooks/use-auth')
+      return useAuth.getState()
+    } catch (error) {
+      return null
+    }
+  }
+  return null
+}
+
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? 'https://www.picamula.com/api' 
   : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001')
@@ -25,6 +39,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Include cookies in requests
 })
 
 // Request interceptor to add auth token
@@ -38,18 +53,51 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// Response interceptor for error handling
+// Response interceptor for error handling and token refresh
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Clear auth data on unauthorized
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN)
-        localStorage.removeItem(LOCAL_STORAGE_KEYS.USER_DATA)
-        window.location.href = '/'
+  async (error) => {
+    const originalRequest = error.config
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true
+
+      try {
+        // Try to refresh the token
+        const refreshResponse = await authApi.refreshToken()
+        const { accessToken } = refreshResponse.data
+
+        // Update the stored token
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, accessToken)
+          // Update the auth store if available
+          const authStore = getAuthStore()
+          if (authStore?.updateToken) {
+            authStore.updateToken(accessToken)
+          }
+        }
+
+        // Update the authorization header for the original request
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`
+
+        // Retry the original request
+        return api(originalRequest)
+      } catch (refreshError) {
+        // Refresh failed, clear auth data and redirect to login
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN)
+          localStorage.removeItem(LOCAL_STORAGE_KEYS.USER_DATA)
+          // Clear auth store if available
+          const authStore = getAuthStore()
+          if (authStore?.logout) {
+            authStore.logout()
+          }
+          window.location.href = '/'
+        }
+        return Promise.reject(refreshError)
       }
     }
+
     return Promise.reject(error)
   }
 )
@@ -67,6 +115,9 @@ export const authApi = {
   
   me: (): Promise<AxiosResponse<User>> =>
     api.get(API_ENDPOINTS.AUTH.ME),
+  
+  refreshToken: (): Promise<AxiosResponse<AuthResponse>> =>
+    api.post(API_ENDPOINTS.AUTH.REFRESH, {}),
 }
 
 // Users API
