@@ -65,11 +65,14 @@ api.interceptors.response.use(
       try {
         // Try to refresh the token
         const refreshResponse = await authApi.refreshToken()
-        const { accessToken } = refreshResponse.data
+        const { accessToken, refreshToken: newRefreshToken } = refreshResponse.data
 
-        // Update the stored token
+        // Update the stored tokens
         if (typeof window !== 'undefined') {
           localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, accessToken)
+          if (newRefreshToken) {
+            localStorage.setItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken)
+          }
           // Update the auth store if available
           const authStore = getAuthStore()
           if (authStore?.updateToken) {
@@ -116,8 +119,10 @@ export const authApi = {
   me: (): Promise<AxiosResponse<User>> =>
     api.get(API_ENDPOINTS.AUTH.ME),
   
-  refreshToken: (): Promise<AxiosResponse<AuthResponse>> =>
-    api.post(API_ENDPOINTS.AUTH.REFRESH, {}),
+  refreshToken: (): Promise<AxiosResponse<AuthResponse>> => {
+    const refreshToken = localStorage.getItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN)
+    return api.post(API_ENDPOINTS.AUTH.REFRESH, { refreshToken })
+  },
 }
 
 // Users API
