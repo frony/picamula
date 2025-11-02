@@ -26,5 +26,6 @@ export const TRIP_STATUS_LABELS = {
 
 export const LOCAL_STORAGE_KEYS = {
   AUTH_TOKEN: 'junta_tribo_token',
+  REFRESH_TOKEN: 'junta_tribo_refresh_token',
   USER_DATA: 'junta_tribo_user',
 } as const;
