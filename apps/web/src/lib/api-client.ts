@@ -25,7 +25,7 @@ export class ApiClient {
 
   private constructor() {
     this.baseURL = process.env.NODE_ENV === 'production' 
-      ? 'https://www.picamula.com/api' 
+      ? 'https://www.juntatribo.com/api' 
       : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001')
     
     // Set up automatic token refresh when client is created

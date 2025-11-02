@@ -68,7 +68,7 @@ export default function NewTripPage() {
                 Back to Dashboard
               </Button>
               <div className="hidden md:block w-px h-6 bg-gray-300" />
-              <h1 className="text-xl md:text-2xl font-bold text-primary">Pica Mula</h1>
+              <h1 className="text-xl md:text-2xl font-bold text-primary">JuntaTribo</h1>
             </div>
             <div className="flex items-center space-x-2 md:space-x-4">
               <span className="text-sm text-gray-600 hidden md:inline">

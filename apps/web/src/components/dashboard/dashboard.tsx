@@ -77,7 +77,7 @@ export function Dashboard() {
         <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
-              <h1 className="text-xl md:text-2xl font-bold text-primary">Pica Mula</h1>
+              <h1 className="text-xl md:text-2xl font-bold text-primary">JuntaTribo</h1>
             </div>
             <div className="flex items-center space-x-2 md:space-x-4">
               <span className="text-sm text-gray-600 hidden md:inline">
