@@ -40,7 +40,7 @@ import * as path from 'path';
           password: configService.get('DB_PASSWORD', 'password'),
           database: configService.get('DB_NAME', 'junta_tribo'),
           autoLoadEntities: true,
-          synchronize: true,
+          // synchronize: true,
           logging: true,
           migrations: ['dist/database/migrations/*.js'],
           migrationsTableName: 'migrations',
