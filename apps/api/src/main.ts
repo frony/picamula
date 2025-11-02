@@ -10,7 +10,7 @@ async function bootstrap() {
 
   // Enable CORS
   app.enableCors({
-    origin: ['https://picamula.com', 'https://www.picamula.com', 'https://localhost:3003', 'http://localhost:3003'],
+    origin: ['https://juntatribo.com', 'https://www.juntatribo.com', 'https://localhost:3003', 'http://localhost:3003'],
     credentials: true,
   });
 

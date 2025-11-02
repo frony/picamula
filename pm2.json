@@ -1,7 +1,7 @@
 {
   "apps": [
     {
-      "name": "picamula-api",
+      "name": "juntatribo-api",
       "cwd": "./",
       "script": "npm",
       "args": "run start:prod:api",
@@ -18,14 +18,14 @@
       "min_uptime": "10s"
     },
     {
-      "name": "picamula-web",
+      "name": "juntatribo-web",
       "cwd": "./",
       "script": "npm",
       "args": "run start:prod:web",
       "env": {
         "NODE_ENV": "production",
         "PORT": "3003",
-        "NEXT_PUBLIC_API_URL": "https://www.picamula.com/api"
+        "NEXT_PUBLIC_API_URL": "https://www.juntatribo.com/api"
       },
       "instances": 1,
       "exec_mode": "fork",
