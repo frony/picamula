@@ -28,10 +28,10 @@ export async function fetchTrips(status?: string): Promise<ActionResult> {
   }
 }
 
-// Fetch trip by ID
-export async function fetchTripById(id: string): Promise<ActionResult> {
+// Fetch trip by slug
+export async function fetchTripById(slug: string): Promise<ActionResult> {
   try {
-    const trip = await apiClient.get<Trip>(`/trips/${id}`);
+    const trip = await apiClient.get<Trip>(`/trips/${slug}`);
     
     return {
       success: true,
@@ -105,10 +105,10 @@ export async function createTrip(data: CreateTripDto): Promise<ActionResult> {
   }
 }
 
-// Update existing trip
-export async function updateTrip(id: string, data: UpdateTripDto): Promise<ActionResult> {
+// Update existing trip by slug
+export async function updateTrip(slug: string, data: UpdateTripDto): Promise<ActionResult> {
   try {
-    const trip = await apiClient.patch<Trip>(`/trips/${id}`, data);
+    const trip = await apiClient.patch<Trip>(`/trips/${slug}`, data);
     
     return {
       success: true,
@@ -145,10 +145,10 @@ export async function updateTrip(id: string, data: UpdateTripDto): Promise<Actio
   }
 }
 
-// Delete trip
-export async function deleteTrip(id: string): Promise<ActionResult> {
+// Delete trip by slug
+export async function deleteTrip(slug: string): Promise<ActionResult> {
   try {
-    await apiClient.delete(`/trips/${id}`);
+    await apiClient.delete(`/trips/${slug}`);
     
     return {
       success: true

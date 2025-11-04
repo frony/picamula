@@ -27,7 +27,7 @@ export class TripsService {
     });
   }
 
-  async findOne(id: string, userId: number): Promise<Trip> {
+  async findOne(id: number, userId: number): Promise<Trip> {
     const trip = await this.tripsRepository.findOne({
       where: { id },
       relations: ['owner', 'notes', 'notes.author'],
@@ -51,14 +51,49 @@ export class TripsService {
     return trip;
   }
 
-  async update(id: string, updateTripDto: UpdateTripDto, userId: number): Promise<Trip> {
+  async findBySlug(slug: string, userId: number): Promise<Trip> {
+    const trip = await this.tripsRepository.findOne({
+      where: { slug },
+      relations: ['owner', 'notes', 'notes.author'],
+      order: {
+        notes: {
+          date: 'DESC',
+          createdAt: 'DESC'
+        }
+      }
+    });
+
+    if (!trip) {
+      throw new NotFoundException(`Trip with slug ${slug} not found`);
+    }
+
+    // Check if user owns the trip
+    if (trip.ownerId !== userId) {
+      throw new ForbiddenException('You do not have access to this trip');
+    }
+
+    return trip;
+  }
+
+  async update(id: number, updateTripDto: UpdateTripDto, userId: number): Promise<Trip> {
     const trip = await this.findOne(id, userId);
     Object.assign(trip, updateTripDto);
     return await this.tripsRepository.save(trip);
   }
 
-  async remove(id: string, userId: number): Promise<void> {
+  async updateBySlug(slug: string, updateTripDto: UpdateTripDto, userId: number): Promise<Trip> {
+    const trip = await this.findBySlug(slug, userId);
+    Object.assign(trip, updateTripDto);
+    return await this.tripsRepository.save(trip);
+  }
+
+  async remove(id: number, userId: number): Promise<void> {
     const trip = await this.findOne(id, userId);
+    await this.tripsRepository.remove(trip);
+  }
+
+  async removeBySlug(slug: string, userId: number): Promise<void> {
+    const trip = await this.findBySlug(slug, userId);
     await this.tripsRepository.remove(trip);
   }
 

@@ -56,31 +56,31 @@ export class TripsController {
     return this.tripsService.findUpcoming(user.sub);
   }
 
-  @ApiOperation({ summary: 'Get trip by ID' })
+  @ApiOperation({ summary: 'Get trip by slug' })
   @ApiResponse({ status: 200, description: 'Trip retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Trip not found' })
   @ApiResponse({ status: 403, description: 'Access denied' })
-  @Get(':id')
-  findOne(@Param('id') id: string, @ActiveUser() user: ActiveUserData) {
-    return this.tripsService.findOne(id, user.sub);
+  @Get(':slug')
+  findOne(@Param('slug') slug: string, @ActiveUser() user: ActiveUserData) {
+    return this.tripsService.findBySlug(slug, user.sub);
   }
 
-  @ApiOperation({ summary: 'Update trip by ID' })
+  @ApiOperation({ summary: 'Update trip by slug' })
   @ApiResponse({ status: 200, description: 'Trip updated successfully' })
   @ApiResponse({ status: 404, description: 'Trip not found' })
   @ApiResponse({ status: 403, description: 'Access denied' })
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTripDto: UpdateTripDto, @ActiveUser() user: ActiveUserData) {
-    return this.tripsService.update(id, updateTripDto, user.sub);
+  @Patch(':slug')
+  update(@Param('slug') slug: string, @Body() updateTripDto: UpdateTripDto, @ActiveUser() user: ActiveUserData) {
+    return this.tripsService.updateBySlug(slug, updateTripDto, user.sub);
   }
 
-  @ApiOperation({ summary: 'Delete trip by ID' })
+  @ApiOperation({ summary: 'Delete trip by slug' })
   @ApiResponse({ status: 200, description: 'Trip deleted successfully' })
   @ApiResponse({ status: 404, description: 'Trip not found' })
   @ApiResponse({ status: 403, description: 'Access denied' })
-  @Delete(':id')
-  remove(@Param('id') id: string, @ActiveUser() user: ActiveUserData) {
-    return this.tripsService.remove(id, user.sub);
+  @Delete(':slug')
+  remove(@Param('slug') slug: string, @ActiveUser() user: ActiveUserData) {
+    return this.tripsService.removeBySlug(slug, user.sub);
   }
 
 }
