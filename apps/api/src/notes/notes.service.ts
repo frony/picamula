@@ -15,38 +15,38 @@ export class NotesService {
     private tripsRepository: Repository<Trip>,
   ) {}
 
-  async create(tripId: string, createNoteDto: CreateNoteDto, authorId: number): Promise<Note> {
-    // Verify the trip exists and user has access
+  async create(tripSlug: string, createNoteDto: CreateNoteDto, authorId: number): Promise<Note> {
+    // Find trip by slug and verify user has access
     const trip = await this.tripsRepository.findOne({
-      where: { id: tripId, ownerId: authorId },
+      where: { slug: tripSlug, ownerId: authorId },
     });
 
     if (!trip) {
-      throw new NotFoundException(`Trip with ID ${tripId} not found or you do not have access to it`);
+      throw new NotFoundException(`Trip with slug ${tripSlug} not found or you do not have access to it`);
     }
 
     const note = this.notesRepository.create({
       ...createNoteDto,
       date: new Date(createNoteDto.date),
-      tripId,
+      tripId: trip.id,  // Use numeric ID
       authorId,
     });
 
     return await this.notesRepository.save(note);
   }
 
-  async findAllByTrip(tripId: string, userId: number): Promise<Note[]> {
-    // Verify the trip exists and user has access
+  async findAllByTrip(tripSlug: string, userId: number): Promise<Note[]> {
+    // Find trip by slug and verify user has access
     const trip = await this.tripsRepository.findOne({
-      where: { id: tripId, ownerId: userId },
+      where: { slug: tripSlug, ownerId: userId },
     });
 
     if (!trip) {
-      throw new NotFoundException(`Trip with ID ${tripId} not found or you do not have access to it`);
+      throw new NotFoundException(`Trip with slug ${tripSlug} not found or you do not have access to it`);
     }
 
     return await this.notesRepository.find({
-      where: { tripId },
+      where: { tripId: trip.id },  // Use numeric ID
       order: { date: 'DESC', createdAt: 'DESC' },
     });
   }

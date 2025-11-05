@@ -25,7 +25,7 @@ export class TripAddSlugAndChangeIdToNumber1730568000000 implements MigrationInt
             UPDATE "notes" n 
             SET "new_trip_id" = t."new_id" 
             FROM "trips" t 
-            WHERE n."tripId" = t."id"::text
+            WHERE n."tripId"::text = t."id"::text
         `);
         
         // Step 6a: Verify all notes were mapped (safety check)
