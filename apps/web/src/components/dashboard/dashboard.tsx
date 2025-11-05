@@ -58,8 +58,8 @@ export function Dashboard() {
     router.push('/trips/new')
   }
 
-  const handleTripClick = (tripId: string) => {
-    router.push(`/trips/${tripId}`)
+  const handleTripClick = (tripSlug: string) => {
+    router.push(`/trips/${tripSlug}`)
   }
 
   if (loading) {
@@ -77,7 +77,7 @@ export function Dashboard() {
         <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
-              <h1 className="text-xl md:text-2xl font-bold text-primary">JuntaTribo</h1>
+              <h1 className="font-momo text-xl md:text-2xl font-bold text-primary">JuntaTribo</h1>
             </div>
             <div className="flex items-center space-x-2 md:space-x-4">
               <span className="text-sm text-gray-600 hidden md:inline">
@@ -176,7 +176,7 @@ export function Dashboard() {
               <Card 
                 key={trip.id} 
                 className="hover:shadow-lg transition-shadow cursor-pointer" 
-                onClick={() => handleTripClick(trip.id)}
+                onClick={() => handleTripClick(trip.slug)}
               >
                 <CardHeader className="pb-3">
                   <div className="flex flex-col md:flex-row justify-between items-start gap-2">

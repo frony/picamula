@@ -19,7 +19,7 @@ import { ActiveUserData } from '../iam/interfaces/active-user-data.interface';
 @ApiTags('Notes')
 @ApiBearerAuth('JWT-auth')
 @Auth(AuthType.Bearer)
-@Controller('trips/:tripId/notes')
+@Controller('trips/:tripSlug/notes')
 export class NotesController {
   constructor(private readonly notesService: NotesService) {}
 
@@ -29,11 +29,11 @@ export class NotesController {
   @ApiResponse({ status: 403, description: 'Access denied' })
   @Post()
   create(
-    @Param('tripId') tripId: string,
+    @Param('tripSlug') tripSlug: string,
     @Body() createNoteDto: CreateNoteDto,
     @ActiveUser() user: ActiveUserData
   ) {
-    return this.notesService.create(tripId, createNoteDto, user.sub);
+    return this.notesService.create(tripSlug, createNoteDto, user.sub);
   }
 
   @ApiOperation({ summary: 'Get all notes for a trip' })
@@ -42,10 +42,10 @@ export class NotesController {
   @ApiResponse({ status: 403, description: 'Access denied' })
   @Get()
   findAll(
-    @Param('tripId') tripId: string,
+    @Param('tripSlug') tripSlug: string,
     @ActiveUser() user: ActiveUserData
   ) {
-    return this.notesService.findAllByTrip(tripId, user.sub);
+    return this.notesService.findAllByTrip(tripSlug, user.sub);
   }
 
   @ApiOperation({ summary: 'Get a specific note' })

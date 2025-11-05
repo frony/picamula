@@ -7,6 +7,7 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
+  Generated,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Note } from '../../notes/entities/note.entity';
@@ -21,8 +22,12 @@ export enum TripStatus {
 
 @Entity('trips')
 export class Trip {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column({ unique: true })
+  @Generated('uuid')
+  slug: string;
 
   @Column()
   title: string;

@@ -10,6 +10,7 @@ import { EmailVerificationToken } from './src/users/entities/email-verification-
 import { PasswordResetToken } from './src/iam/authentication/entities/password-reset-token.entity';
 import { EmailConfirmation } from './src/iam/authentication/entities/email-confirmation.entity';
 import { UserReplaceNameByFirstAndLastName1759355264384 } from './src/migrations/1759355264384-UserReplaceNameByFirstAndLastName';
+import { TripAddSlugAndChangeIdToNumber1730568000000 } from './src/migrations/1730568000000-TripAddSlugAndChangeIdToNumber';
 
 // Load .env from project root
 config({ path: join(__dirname, '../../../.env') });
@@ -33,6 +34,7 @@ export default new DataSource({
   ],
   migrations: [
     UserReplaceNameByFirstAndLastName1759355264384,
+    TripAddSlugAndChangeIdToNumber1730568000000,
   ],
   migrationsTableName: 'migrations',
   synchronize: false,

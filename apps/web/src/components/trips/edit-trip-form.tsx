@@ -105,7 +105,7 @@ export function EditTripForm({ trip, onSuccess, onCancel }: EditTripFormProps) {
         participants: participants.filter(email => email.trim() !== ''),
       }
 
-      await tripsApi.update(trip.id, tripData)
+      await tripsApi.update(trip.slug, tripData)
       
       toast({
         title: 'Success',

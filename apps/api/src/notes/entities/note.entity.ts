@@ -45,7 +45,7 @@ export class Note {
   trip: Trip;
 
   @Column()
-  tripId: string;
+  tripId: number;
 
   @ApiProperty({
     description: 'The user who created this note',

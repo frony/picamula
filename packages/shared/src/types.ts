@@ -3,7 +3,7 @@ export interface Note {
   id: string;
   content: string;
   date: Date;
-  tripId: string;
+  tripId: number;  // Changed from string to number
   author: User;
   authorId: number;
   createdAt: Date;
@@ -59,7 +59,8 @@ export enum TripStatus {
 }
 
 export interface Trip {
-  id: string;
+  id: number;        // Changed from string to number
+  slug: string;      // NEW: Public identifier for URLs
   title: string;
   description?: string;
   destination: string;
@@ -71,7 +72,7 @@ export interface Trip {
   itinerary?: any[];
   notes?: Note[];
   owner: User;
-  ownerId: number; // Changed to number
+  ownerId: number;
   createdAt: Date;
   updatedAt: Date;
 }
