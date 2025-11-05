@@ -43,7 +43,19 @@ export class TripAddSlugAndChangeIdToNumber1730568000000 implements MigrationInt
         await queryRunner.query(`ALTER TABLE "notes" RENAME COLUMN "new_trip_id" TO "tripId"`);
         
         // Step 9: Drop the old UUID id column from trips
-        await queryRunner.query(`ALTER TABLE "trips" DROP CONSTRAINT "PK_trips"`);
+        // First, find and drop the actual primary key constraint
+        const primaryKeyResult = await queryRunner.query(`
+            SELECT constraint_name 
+            FROM information_schema.table_constraints 
+            WHERE table_name = 'trips' 
+            AND constraint_type = 'PRIMARY KEY'
+        `);
+        
+        if (primaryKeyResult.length > 0) {
+            const pkName = primaryKeyResult[0].constraint_name;
+            await queryRunner.query(`ALTER TABLE "trips" DROP CONSTRAINT "${pkName}"`);
+        }
+        
         await queryRunner.query(`ALTER TABLE "trips" DROP COLUMN "id"`);
         
         // Step 10: Rename new_id to id and make it primary key
@@ -88,7 +100,18 @@ export class TripAddSlugAndChangeIdToNumber1730568000000 implements MigrationInt
         await queryRunner.query(`ALTER TABLE "notes" RENAME COLUMN "new_trip_id" TO "tripId"`);
         
         // Step 8: Drop numeric id primary key
-        await queryRunner.query(`ALTER TABLE "trips" DROP CONSTRAINT "PK_trips"`);
+        const primaryKeyResult = await queryRunner.query(`
+            SELECT constraint_name 
+            FROM information_schema.table_constraints 
+            WHERE table_name = 'trips' 
+            AND constraint_type = 'PRIMARY KEY'
+        `);
+        
+        if (primaryKeyResult.length > 0) {
+            const pkName = primaryKeyResult[0].constraint_name;
+            await queryRunner.query(`ALTER TABLE "trips" DROP CONSTRAINT "${pkName}"`);
+        }
+        
         await queryRunner.query(`ALTER TABLE "trips" DROP COLUMN "id"`);
         
         // Step 9: Rename new_id to id and make it primary key

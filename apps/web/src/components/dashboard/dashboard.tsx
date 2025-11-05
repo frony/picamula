@@ -58,8 +58,8 @@ export function Dashboard() {
     router.push('/trips/new')
   }
 
-  const handleTripClick = (tripId: string) => {
-    router.push(`/trips/${tripId}`)
+  const handleTripClick = (tripSlug: string) => {
+    router.push(`/trips/${tripSlug}`)
   }
 
   if (loading) {
@@ -176,7 +176,7 @@ export function Dashboard() {
               <Card 
                 key={trip.id} 
                 className="hover:shadow-lg transition-shadow cursor-pointer" 
-                onClick={() => handleTripClick(trip.id)}
+                onClick={() => handleTripClick(trip.slug)}
               >
                 <CardHeader className="pb-3">
                   <div className="flex flex-col md:flex-row justify-between items-start gap-2">
