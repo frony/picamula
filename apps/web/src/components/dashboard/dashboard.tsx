@@ -72,26 +72,6 @@ export function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-              <h1 className="font-momo text-xl md:text-2xl font-bold text-primary">JuntaTribo</h1>
-            </div>
-            <div className="flex items-center space-x-2 md:space-x-4">
-              <span className="text-sm text-gray-600 hidden md:inline">
-                Welcome, {user?.firstName}!
-              </span>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                <LogOut className="w-4 h-4 md:mr-2" />
-                <span className="hidden md:inline">Logout</span>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 md:mb-8">

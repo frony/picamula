@@ -84,3 +84,10 @@
     line-clamp: 2;
   }
 }
+
+@layer components {
+  .juntatribo {
+    @apply text-xl md:text-2xl font-bold text-white;
+    font-family: 'Momo Trust Display', sans-serif;
+  }
+}
