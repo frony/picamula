@@ -2,8 +2,7 @@
 
 // import BandAndFanLogo from '@/components/bandandfan-logo'
 import React from "react";
-// import Navigation from "@/components/nav-group";
-import { useAuth } from '@/hooks/use-auth'
+import Navigation from "@/components/navigation";
 
 export default async function Header() {
   // const session = await auth();
@@ -19,6 +18,7 @@ export default async function Header() {
         </div>
 
         {/* <Navigation isLoggedIn={!!session} userRole={userRole} /> */}
+        <Navigation />
       </header>
     </>
   );
