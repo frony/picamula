@@ -1,5 +1,4 @@
 'use client'
-// import {EllipsisVerticalIcon} from "@heroicons/react/24/outline";
 import Nav from "@/components/nav";
 
 export default function Navigation() {

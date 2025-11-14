@@ -1,13 +1,9 @@
 'use server';
 
-// import BandAndFanLogo from '@/components/bandandfan-logo'
 import React from "react";
 import Navigation from "@/components/navigation";
 
 export default async function Header() {
-  // const session = await auth();
-  // const userRole = (session as any)?.user?.role;
-
   return (
     <>
       {/* Header */}
