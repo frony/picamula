@@ -30,8 +30,9 @@ interface UseMediaUploadReturn {
 
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
 const ACCEPTED_VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm']
-const MAX_FILE_SIZE = 1000 * 1024 * 1024 // 1GB for images (no practical limit)
-const MAX_VIDEO_SIZE = 1000 * 1024 * 1024 // 1GB for videos (no practical limit)
+const MAX_FILE_SIZE = 1000 * 1024 * 1024 // 1GB for images
+const MAX_VIDEO_SIZE = 1000 * 1024 * 1024 // 1GB for videos
+const MAX_VIDEO_DURATION_MINUTES = 5 // Matches backend MAX_VIDEO_DURATION
 
 export function useMediaUpload(): UseMediaUploadReturn {
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([])
@@ -122,6 +123,9 @@ export function useMediaUpload(): UseMediaUploadReturn {
           )
         )
 
+        console.log(`Starting upload for: ${mediaFile.file.name}`)
+        const startTime = Date.now()
+
         // Create FormData for multipart upload
         const formData = new FormData()
         formData.append('file', mediaFile.file)
@@ -148,6 +152,9 @@ export function useMediaUpload(): UseMediaUploadReturn {
           uploadPromise,
           timeoutPromise
         ])
+
+        const duration = ((Date.now() - startTime) / 1000).toFixed(1)
+        console.log(`Processing completed for ${mediaFile.file.name} in ${duration}s`)
 
         if (result.success && result.data) {
           // Update with resized data
@@ -179,12 +186,18 @@ export function useMediaUpload(): UseMediaUploadReturn {
         }
       } catch (error: any) {
         console.error('Error processing file:', error)
-        const errorMessage = error.message || 'Failed to process file'
-        const friendlyError = errorMessage.includes('timeout') 
-          ? 'File too large or processing timed out' 
-          : errorMessage.includes('fetch')
-          ? 'Network error - file may be too large'
-          : errorMessage
+        let errorMessage = error.message || 'Failed to process file'
+        
+        // Provide user-friendly error messages
+        if (errorMessage.includes('timeout')) {
+          errorMessage = `Processing timed out. Videos over ${MAX_VIDEO_DURATION_MINUTES} minutes are not supported.`
+        } else if (errorMessage.includes('fetch')) {
+          errorMessage = 'Network error - file may be too large'
+        } else if (errorMessage.includes('Video too long')) {
+          errorMessage = `Video exceeds ${MAX_VIDEO_DURATION_MINUTES} minute limit`
+        } else if (errorMessage.includes('dimensions too large')) {
+          errorMessage = 'Video dimensions too large'
+        }
         
         setMediaFiles((prev) =>
           prev.map((f) =>
@@ -192,7 +205,7 @@ export function useMediaUpload(): UseMediaUploadReturn {
               ? {
                   ...f,
                   status: 'error' as const,
-                  error: friendlyError,
+                  error: errorMessage,
                 }
               : f
           )
@@ -229,4 +242,3 @@ export function useMediaUpload(): UseMediaUploadReturn {
     clearAll,
   }
 }
-
