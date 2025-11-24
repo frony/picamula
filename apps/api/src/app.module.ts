@@ -7,6 +7,7 @@ import { IamModule } from './iam/iam.module';
 import { UsersModule } from './users/users.module';
 import { TripsModule } from './trips/trips.module';
 import { NotesModule } from './notes/notes.module';
+import { S3Module } from './s3/s3.module';
 import * as redisStore from 'cache-manager-redis-store';
 import * as path from 'path';
 
@@ -94,6 +95,7 @@ import * as path from 'path';
     UsersModule,
     TripsModule,
     NotesModule,
+    S3Module,
   ],
   controllers: [],
   providers: [],

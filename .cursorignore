@@ -1,0 +1,25 @@
+# Compiled output
+dist
+.next
+build
+*.tsbuildinfo
+
+# Dependencies
+node_modules
+
+# Turbo
+.turbo
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+
+# Cache
+.cache
+.parcel-cache
+
+# Testing
+coverage
+
