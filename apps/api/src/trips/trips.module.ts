@@ -3,11 +3,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { TripsService } from './trips.service';
 import { TripsController } from './trips.controller';
 import { Trip } from './entities/trip.entity';
+import { MediaFile } from './entities/media-file.entity';
 import { NotesModule } from '../notes/notes.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Trip]),
+    TypeOrmModule.forFeature([Trip, MediaFile]),
     NotesModule,
   ],
   controllers: [TripsController],
