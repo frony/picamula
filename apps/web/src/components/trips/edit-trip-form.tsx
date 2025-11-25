@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { TripStatus, TRIP_STATUS_LABELS } from '@junta-tribo/shared'
+import { TripStatus, TRIP_STATUS_LABELS, LOCAL_STORAGE_KEYS } from '@junta-tribo/shared'
 import type { UpdateTripDto, Trip } from '@junta-tribo/shared'
 import { X, Plus, Upload, Image as ImageIcon, Video, Loader2 } from 'lucide-react'
 import { useMediaUpload } from '@/hooks/use-media-upload'
@@ -105,7 +105,7 @@ export function EditTripForm({ trip, onSuccess, onCancel }: EditTripFormProps) {
 
   const onSubmit = async (data: EditTripFormData) => {
     setIsSubmitting(true)
-    
+
     try {
       const tripData: UpdateTripDto = {
         title: data.title,
@@ -118,28 +118,95 @@ export function EditTripForm({ trip, onSuccess, onCancel }: EditTripFormProps) {
         participants: participants.filter(email => email.trim() !== ''),
       }
 
-      // TODO: When backend is ready, include media files in the update
-      // const completedMedia = mediaFiles.filter(f => f.status === 'completed')
-      // if (completedMedia.length > 0) {
-      //   tripData.media = completedMedia.map(m => ({
-      //     data: m.resizedData,
-      //     mimeType: m.mimeType,
-      //     originalName: m.file.name,
-      //   }))
-      // }
+      // Upload media files if any are completed
+      const completedMedia = mediaFiles.filter(f => f.status === 'completed')
+      if (completedMedia.length > 0) {
+        try {
+          // Get auth token
+          const token = localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN)
+          if (!token) {
+            throw new Error('Not authenticated')
+          }
 
+          toast({
+            title: 'Uploading media...',
+            description: `Uploading ${completedMedia.length} file(s) to cloud storage`,
+          })
+
+          // Upload each completed media file to S3
+          const uploadResults = []
+          for (let i = 0; i < completedMedia.length; i++) {
+            const media = completedMedia[i]
+            try {
+              const formData = new FormData()
+              formData.append('file', media.file)
+
+              const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+              const response = await fetch(
+                `${apiUrl}/trips/${trip.id}/media/upload`,
+                {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                  },
+                  body: formData,
+                }
+              )
+
+              if (!response.ok) {
+                const error = await response.json()
+                throw new Error(error.message || `Failed to upload ${media.file.name}`)
+              }
+
+              const result = await response.json()
+              uploadResults.push({
+                key: result.key,
+                url: result.url,
+                type: result.type,
+                originalName: result.originalName,
+                mimeType: result.mimeType,
+                size: result.size,
+                order: i,
+              })
+
+              toast({
+                title: 'Upload progress',
+                description: `Uploaded ${i + 1}/${completedMedia.length} files`,
+              })
+            } catch (error) {
+              console.error(`Failed to upload ${media.file.name}:`, error)
+              throw error
+            }
+          }
+
+          // Add media files metadata to trip data
+          tripData.mediaFiles = uploadResults
+        } catch (uploadError: any) {
+          toast({
+            title: 'Upload Error',
+            description: uploadError.message || 'Failed to upload media files',
+            variant: 'destructive',
+          })
+          setIsSubmitting(false)
+          return
+        }
+      }
+
+      // Update trip with or without media
       await tripsApi.update(trip.slug, tripData)
-      
+
       toast({
         title: 'Success',
-        description: 'Trip updated successfully!',
+        description: completedMedia.length > 0
+          ? `Trip updated with ${completedMedia.length} media file(s)!`
+          : 'Trip updated successfully!',
       })
-      
+
       onSuccess?.()
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to update trip',
+        description: error.response?.data?.message || error.message || 'Failed to update trip',
         variant: 'destructive',
       })
     } finally {
@@ -316,7 +383,7 @@ export function EditTripForm({ trip, onSuccess, onCancel }: EditTripFormProps) {
             {isProcessing ? 'Processing...' : 'Upload Media'}
           </Button>
         </div>
-        
+
         <input
           ref={fileInputRef}
           type="file"
@@ -458,9 +525,9 @@ export function EditTripForm({ trip, onSuccess, onCancel }: EditTripFormProps) {
 
       <div className="flex flex-col-reverse md:flex-row justify-end gap-3 md:gap-2 pt-6">
         {onCancel && (
-          <Button 
-            type="button" 
-            variant="outline" 
+          <Button
+            type="button"
+            variant="outline"
             onClick={onCancel}
             className="w-full md:w-auto"
             disabled={isSubmitting}
@@ -468,8 +535,8 @@ export function EditTripForm({ trip, onSuccess, onCancel }: EditTripFormProps) {
             Cancel
           </Button>
         )}
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           disabled={isSubmitting}
           className="w-full md:w-auto"
         >
