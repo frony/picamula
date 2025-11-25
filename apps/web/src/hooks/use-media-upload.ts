@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { useToast } from './use-toast'
+import { compressImage, compressVideo } from '../lib/media-upload'
 
 interface ResizeResult {
   success: boolean
@@ -14,8 +16,9 @@ export interface MediaFile {
   id: string
   file: File
   preview: string
-  status: 'pending' | 'processing' | 'completed' | 'error'
-  resizedData?: string // Base64 encoded resized file
+  status: 'pending' | 'compressing' | 'completed' | 'error'
+  compressedFile?: File // Compressed file ready for upload
+  compressionProgress?: number // 0-100
   mimeType?: string
   error?: string
 }
@@ -30,13 +33,13 @@ interface UseMediaUploadReturn {
 
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
 const ACCEPTED_VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm']
-const MAX_FILE_SIZE = 1000 * 1024 * 1024 // 1GB for images
-const MAX_VIDEO_SIZE = 1000 * 1024 * 1024 // 1GB for videos
-const MAX_VIDEO_DURATION_MINUTES = 5 // Matches backend MAX_VIDEO_DURATION
+const MAX_FILE_SIZE = 1000 * 1024 * 1024 // 1GB
+const MAX_VIDEO_SIZE = 1000 * 1024 * 1024 // 1GB
 
 export function useMediaUpload(): UseMediaUploadReturn {
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
+  const { toast } = useToast()
 
   const addFiles = useCallback(async (files: FileList | File[]) => {
     const fileArray = Array.from(files)
@@ -58,7 +61,6 @@ export function useMediaUpload(): UseMediaUploadReturn {
       const isVideo = ACCEPTED_VIDEO_TYPES.includes(file.type)
       const isValidType = isImage || isVideo
       
-      // Check size limits based on file type
       const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_FILE_SIZE
       const isValidSize = file.size <= maxSize
 
@@ -74,40 +76,38 @@ export function useMediaUpload(): UseMediaUploadReturn {
       }
     })
 
-    // Create error media files to show in UI
-    const errorMediaFiles: MediaFile[] = []
-    errors.forEach((error) => {
-      const file = fileArray.find(f => f.name === error.file)
-      if (file) {
-        // Create preview URL for both images and videos
-        const shouldCreatePreview = file.type.startsWith('image/') || file.type.startsWith('video/')
-        errorMediaFiles.push({
-          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          file,
-          preview: shouldCreatePreview ? URL.createObjectURL(file) : '',
-          status: 'error',
-          error: error.reason,
-        })
+    // Create error media files
+    const errorMediaFiles: MediaFile[] = errors.map((error) => {
+      const file = fileArray.find(f => f.name === error.file)!
+      return {
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        file,
+        preview: URL.createObjectURL(file),
+        status: 'error' as const,
+        error: error.reason,
       }
     })
 
-    // Show errors if any
     if (errors.length > 0) {
       console.error('File validation errors:', errors)
-      // Add error files to state so user can see them
-      if (errorMediaFiles.length > 0) {
-        setMediaFiles((prev) => [...prev, ...errorMediaFiles])
-      }
+      setMediaFiles((prev) => [...prev, ...errorMediaFiles])
+      
+      toast({
+        title: 'Some files were rejected',
+        description: `${errors.length} file(s) had validation errors`,
+        variant: 'destructive',
+      })
     }
 
     if (validFiles.length === 0) return
 
-    // Create media file objects with preview URLs
+    // Create media file objects
     const newMediaFiles: MediaFile[] = validFiles.map((file) => ({
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       file,
       preview: URL.createObjectURL(file),
       status: 'pending',
+      compressionProgress: 0,
     }))
 
     setMediaFiles((prev) => [...prev, ...newMediaFiles])
@@ -116,88 +116,75 @@ export function useMediaUpload(): UseMediaUploadReturn {
     // Process files one by one
     for (const mediaFile of newMediaFiles) {
       try {
-        // Update status to processing
         setMediaFiles((prev) =>
           prev.map((f) =>
-            f.id === mediaFile.id ? { ...f, status: 'processing' as const } : f
+            f.id === mediaFile.id ? { ...f, status: 'compressing' as const, compressionProgress: 0 } : f
           )
         )
 
-        console.log(`Starting upload for: ${mediaFile.file.name}`)
+        console.log(`Starting compression for: ${mediaFile.file.name}`)
         const startTime = Date.now()
 
-        // Create FormData for multipart upload
-        const formData = new FormData()
-        formData.append('file', mediaFile.file)
+        const isImage = mediaFile.file.type.startsWith('image/')
+        const isVideo = mediaFile.file.type.startsWith('video/')
 
-        // Add timeout wrapper (increased to 5 minutes for large video processing)
-        const timeoutMs = mediaFile.file.type.startsWith('video/') ? 300000 : 60000 // 5 min for videos, 1 min for images
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error(`Processing timeout (${timeoutMs / 1000}s)`)), timeoutMs)
-        )
-        
-        // Call API route with FormData
-        const uploadPromise = fetch('/api/media/resize', {
-          method: 'POST',
-          body: formData,
-        }).then(async (response) => {
-          if (!response.ok) {
-            const error = await response.json()
-            throw new Error(error.error || 'Failed to process file')
-          }
-          return response.json()
-        })
-        
-        const result = await Promise.race([
-          uploadPromise,
-          timeoutPromise
-        ])
+        let compressedFile: File
 
-        const duration = ((Date.now() - startTime) / 1000).toFixed(1)
-        console.log(`Processing completed for ${mediaFile.file.name} in ${duration}s`)
-
-        if (result.success && result.data) {
-          // Update with resized data
+        if (isImage) {
+          compressedFile = await compressImage(
+            mediaFile.file,
+            1920,
+            1080,
+            0.85
+          )
+          // Update progress to 100% after completion since compressImage doesn't report progress
           setMediaFiles((prev) =>
             prev.map((f) =>
-              f.id === mediaFile.id
-                ? {
-                    ...f,
-                    status: 'completed' as const,
-                    resizedData: result.data,
-                    mimeType: result.mimeType,
-                  }
-                : f
+              f.id === mediaFile.id ? { ...f, compressionProgress: 100 } : f
             )
+          )
+        } else if (isVideo) {
+          compressedFile = await compressVideo(
+            mediaFile.file,
+            1920,
+            '2M',
+            (progress) => {
+              setMediaFiles((prev) =>
+                prev.map((f) =>
+                  f.id === mediaFile.id ? { ...f, compressionProgress: progress } : f
+                )
+              )
+            }
           )
         } else {
-          // Update with error
-          setMediaFiles((prev) =>
-            prev.map((f) =>
-              f.id === mediaFile.id
-                ? {
-                    ...f,
-                    status: 'error' as const,
-                    error: result.error || 'Failed to resize media',
-                  }
-                : f
-            )
+          compressedFile = mediaFile.file
+        }
+
+        const duration = ((Date.now() - startTime) / 1000).toFixed(1)
+        console.log(`Compression completed for ${mediaFile.file.name} in ${duration}s`)
+
+        setMediaFiles((prev) =>
+          prev.map((f) =>
+            f.id === mediaFile.id
+              ? {
+                  ...f,
+                  status: 'completed' as const,
+                  compressedFile,
+                  compressionProgress: 100,
+                  mimeType: compressedFile.type,
+                }
+              : f
           )
-        }
+        )
+
+        toast({
+          title: 'File compressed',
+          description: `${mediaFile.file.name} ready for upload`,
+        })
+
       } catch (error: any) {
-        console.error('Error processing file:', error)
-        let errorMessage = error.message || 'Failed to process file'
-        
-        // Provide user-friendly error messages
-        if (errorMessage.includes('timeout')) {
-          errorMessage = `Processing timed out. Videos over ${MAX_VIDEO_DURATION_MINUTES} minutes are not supported.`
-        } else if (errorMessage.includes('fetch')) {
-          errorMessage = 'Network error - file may be too large'
-        } else if (errorMessage.includes('Video too long')) {
-          errorMessage = `Video exceeds ${MAX_VIDEO_DURATION_MINUTES} minute limit`
-        } else if (errorMessage.includes('dimensions too large')) {
-          errorMessage = 'Video dimensions too large'
-        }
+        console.error('Error compressing file:', error)
+        const errorMessage = error.message || 'Failed to compress file'
         
         setMediaFiles((prev) =>
           prev.map((f) =>
@@ -210,17 +197,22 @@ export function useMediaUpload(): UseMediaUploadReturn {
               : f
           )
         )
+
+        toast({
+          title: 'Compression failed',
+          description: `${mediaFile.file.name}: ${errorMessage}`,
+          variant: 'destructive',
+        })
       }
     }
 
     setIsProcessing(false)
-  }, [])
+  }, [toast])
 
   const removeFile = useCallback((id: string) => {
     setMediaFiles((prev) => {
       const file = prev.find((f) => f.id === id)
       if (file) {
-        // Revoke preview URL to free memory
         URL.revokeObjectURL(file.preview)
       }
       return prev.filter((f) => f.id !== id)

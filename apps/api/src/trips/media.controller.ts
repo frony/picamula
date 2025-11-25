@@ -57,8 +57,9 @@ export class MediaController {
       throw new BadRequestException('Only images and videos are allowed');
     }
 
-    // Validate file size (e.g., max 50MB for videos, 10MB for images)
-    const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+    // Validate file size - frontend compresses files before upload
+    // These limits account for already-compressed files from the client
+    const maxSize = isVideo ? 100 * 1024 * 1024 : 20 * 1024 * 1024; // 100MB for videos, 20MB for images
     if (file.size > maxSize) {
       throw new BadRequestException(
         `File too large. Maximum size is ${maxSize / 1024 / 1024}MB`,

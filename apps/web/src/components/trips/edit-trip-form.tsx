@@ -133,13 +133,15 @@ export function EditTripForm({ trip, onSuccess, onCancel }: EditTripFormProps) {
             description: `Uploading ${completedMedia.length} file(s) to cloud storage`,
           })
 
-          // Upload each completed media file to S3
+          // Upload each completed media file to S3 (use compressed file)
           const uploadResults = []
           for (let i = 0; i < completedMedia.length; i++) {
             const media = completedMedia[i]
             try {
               const formData = new FormData()
-              formData.append('file', media.file)
+              // Use compressed file if available, otherwise use original
+              const fileToUpload = media.compressedFile || media.file
+              formData.append('file', fileToUpload)
 
               const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
               const response = await fetch(
@@ -445,13 +447,14 @@ export function EditTripForm({ trip, onSuccess, onCancel }: EditTripFormProps) {
                 )}
 
                 {/* Status Overlay */}
-                {media.status === 'processing' && (
+                {media.status === 'compressing' && (
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                     <div className="text-center text-white px-2">
                       <Loader2 className="h-6 w-6 animate-spin mx-auto mb-1" />
-                      <p className="text-xs font-semibold">
-                        {media.file.type.startsWith('video/') ? 'Compressing...' : 'Resizing...'}
-                      </p>
+                      <p className="text-xs font-semibold">Compressing...</p>
+                      {media.compressionProgress !== undefined && (
+                        <p className="text-xs mt-1 opacity-80">{media.compressionProgress}%</p>
+                      )}
                       {media.file.type.startsWith('video/') && (
                         <p className="text-xs mt-1 opacity-80">May take 2-5 min</p>
                       )}
@@ -480,7 +483,7 @@ export function EditTripForm({ trip, onSuccess, onCancel }: EditTripFormProps) {
                   type="button"
                   onClick={() => removeFile(media.id)}
                   className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-                  disabled={media.status === 'processing'}
+                  disabled={media.status === 'compressing'}
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -510,7 +513,7 @@ export function EditTripForm({ trip, onSuccess, onCancel }: EditTripFormProps) {
           <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
             <p className="text-xs text-blue-800 flex items-center gap-1 font-semibold mb-1">
               <Loader2 className="h-3 w-3 animate-spin" />
-              Processing media files...
+              Compressing media files...
             </p>
             <p className="text-xs text-blue-600">
               Images: ~5 seconds | Videos: 2-5 minutes depending on size
