@@ -37,7 +37,7 @@ export class TripsService {
   async findOne(id: number, userId: number): Promise<Trip> {
     const trip = await this.tripsRepository.findOne({
       where: { id },
-      relations: ['owner', 'notes', 'notes.author'],
+      relations: ['owner', 'notes', 'notes.author', 'mediaFiles'],
       order: {
         notes: {
           date: 'DESC',
@@ -61,7 +61,7 @@ export class TripsService {
   async findBySlug(slug: string, userId: number): Promise<Trip> {
     const trip = await this.tripsRepository.findOne({
       where: { slug },
-      relations: ['owner', 'notes', 'notes.author'],
+      relations: ['owner', 'notes', 'notes.author', 'mediaFiles'],
       order: {
         notes: {
           date: 'DESC',

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { Express } from 'express';
 
 export interface UploadResult {
@@ -73,6 +73,32 @@ export class S3Service {
     } catch (error) {
       this.logger.error(`Failed to upload file to S3: ${key}`, error.stack);
       throw new Error(`S3 upload failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Delete a file from S3
+   * @param key - S3 key (path) of the file to delete
+   * @returns True if deletion was successful
+   */
+  async deleteFile(key: string): Promise<boolean> {
+    try {
+      const command = new DeleteObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+      });
+
+      const response = await this.s3Client.send(command);
+
+      if (response.$metadata.httpStatusCode === 204 || response.$metadata.httpStatusCode === 200) {
+        this.logger.log(`File deleted successfully: ${key}`);
+        return true;
+      }
+
+      throw new Error('Delete failed with status: ' + response.$metadata.httpStatusCode);
+    } catch (error) {
+      this.logger.error(`Failed to delete file from S3: ${key}`, error.stack);
+      throw new Error(`S3 delete failed: ${error.message}`);
     }
   }
 }

@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast'
 import { formatDateRange, calculateTripDuration, checkAuthStatus } from '@/lib/utils'
 import { TRIP_STATUS_LABELS } from '@junta-tribo/shared'
 import type { Trip } from '@junta-tribo/shared'
+import { MediaGallery } from '@/components/trips/media-gallery'
 import { 
   ArrowLeft, 
   MapPin, 
@@ -415,6 +416,18 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
             )}
           </CardContent>
         </Card>
+
+        {/* Media Gallery Section */}
+        {trip.mediaFiles && trip.mediaFiles.length > 0 && (
+          <div className="mb-8">
+            <MediaGallery 
+              mediaFiles={trip.mediaFiles} 
+              tripId={trip.id}
+              isOwner={isOwner}
+              onMediaDeleted={fetchTrip}
+            />
+          </div>
+        )}
 
         {/* Notes Section */}
         <Card>

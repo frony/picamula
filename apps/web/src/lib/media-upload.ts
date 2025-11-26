@@ -7,7 +7,8 @@ const API_BASE_URL = process.env.NODE_ENV === 'production'
   : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001')
 
 // FFmpeg core version - can be configured via environment variable
-const FFMPEG_CORE_VERSION = process.env.NEXT_PUBLIC_FFMPEG_CORE_VERSION || '0.12.6'
+// Remove any quotes that might be in the environment variable
+const FFMPEG_CORE_VERSION = (process.env.NEXT_PUBLIC_FFMPEG_CORE_VERSION || '0.12.6').replace(/["']/g, '')
 
 export interface UploadedMediaFile {
   key: string
@@ -37,6 +38,8 @@ async function loadFFmpeg(): Promise<FFmpeg> {
   if (!ffmpegLoaded) {
     try {
       const baseURL = `https://unpkg.com/@ffmpeg/core@${FFMPEG_CORE_VERSION}/dist/umd`
+      console.log('Loading FFmpeg from:', baseURL)
+      console.log('FFmpeg version:', FFMPEG_CORE_VERSION)
       await ffmpegInstance.load({
         coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
         wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),

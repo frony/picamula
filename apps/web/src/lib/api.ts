@@ -187,4 +187,10 @@ export const notesApi = {
     api.delete(`${API_ENDPOINTS.TRIPS.BASE}/${tripId}/notes/${noteId}`),
 }
 
+// Media API
+export const mediaApi = {
+  delete: (tripId: number, mediaId: number): Promise<AxiosResponse<{ message: string }>> =>
+    api.delete(`${API_ENDPOINTS.TRIPS.BASE}/${tripId}/media/${mediaId}`),
+}
+
 export default api

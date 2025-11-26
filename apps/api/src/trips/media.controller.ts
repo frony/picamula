@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Delete,
   UploadedFile,
   UseInterceptors,
   BadRequestException,
@@ -9,8 +10,11 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { Express } from 'express';
 import { S3Service } from '../s3/s3.service';
+import { MediaFile } from './entities/media-file.entity';
 import { Auth } from '../iam/authentication/decorators/auth.decorator';
 import { AuthType } from '../iam/authentication/enums/auth-type.enum';
 import { ActiveUser } from '../iam/decorators/active-user.decorator';
@@ -21,7 +25,11 @@ import { ActiveUserData } from '../iam/interfaces/active-user-data.interface';
 @Auth(AuthType.Bearer)
 @Controller('trips/:tripId/media')
 export class MediaController {
-  constructor(private readonly s3Service: S3Service) {}
+  constructor(
+    private readonly s3Service: S3Service,
+    @InjectRepository(MediaFile)
+    private readonly mediaFileRepository: Repository<MediaFile>,
+  ) {}
 
   @ApiOperation({ summary: 'Upload media file (image or video) for a trip' })
   @ApiConsumes('multipart/form-data')
@@ -84,5 +92,67 @@ export class MediaController {
       mimeType: file.mimetype,
       size: file.size,
     };
+  }
+
+  @ApiOperation({ summary: 'Delete a media file' })
+  @ApiResponse({ status: 200, description: 'File deleted successfully' })
+  @ApiResponse({ status: 404, description: 'File not found' })
+  @Delete(':mediaId')
+  async deleteFile(
+    @Param('tripId', ParseIntPipe) tripId: number,
+    @Param('mediaId', ParseIntPipe) mediaId: number,
+    @ActiveUser() user: ActiveUserData,
+  ) {
+    // Find the media file
+    const mediaFile = await this.mediaFileRepository.findOne({
+      where: { id: mediaId, tripId },
+      relations: ['trip'],
+    });
+
+    if (!mediaFile) {
+      throw new BadRequestException('Media file not found');
+    }
+
+    // Check if user owns the trip
+    if (mediaFile.trip.ownerId !== user.sub) {
+      throw new BadRequestException('You do not have permission to delete this file');
+    }
+
+    // Store S3 key for deletion after DB transaction
+    const s3Key = mediaFile.key;
+
+    // Use transaction to ensure database consistency
+    const queryRunner = this.mediaFileRepository.manager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Delete from database first (within transaction)
+      await queryRunner.manager.remove(MediaFile, mediaFile);
+      
+      // Commit transaction
+      await queryRunner.commitTransaction();
+
+      // After successful DB deletion, delete from S3 (best effort)
+      // If this fails, we'll have an orphaned S3 file, but DB is consistent
+      try {
+        await this.s3Service.deleteFile(s3Key);
+      } catch (s3Error) {
+        // Log S3 deletion error but don't fail the request
+        // since DB deletion was successful
+        console.error(`Failed to delete S3 file ${s3Key}:`, s3Error);
+      }
+
+      return {
+        message: 'File deleted successfully',
+      };
+    } catch (error) {
+      // Rollback transaction on error
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      // Release query runner
+      await queryRunner.release();
+    }
   }
 }

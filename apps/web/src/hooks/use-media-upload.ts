@@ -82,7 +82,7 @@ export function useMediaUpload(): UseMediaUploadReturn {
       return {
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         file,
-        preview: URL.createObjectURL(file),
+        preview: '', // Don't create object URL for error files
         status: 'error' as const,
         error: error.reason,
       }
