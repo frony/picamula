@@ -110,7 +110,7 @@ describe('S3Service', () => {
       mimetype: 'image/jpeg',
       buffer: Buffer.from('test file content'),
       size: 1024,
-      stream: null,
+      stream: null as any,
       destination: '',
       filename: '',
       path: '',
@@ -234,7 +234,7 @@ describe('S3Service', () => {
       const result = await service.uploadFile(videoFile, 'trips/123/videos/test-video.mp4');
 
       expect(result.key).toBe('trips/123/videos/test-video.mp4');
-      
+
       const putObjectCall = (mockS3Client.send as jest.Mock).mock.calls[0][0];
       expect(putObjectCall.input.ContentType).toBe('video/mp4');
     });
@@ -285,7 +285,7 @@ describe('S3Service', () => {
         mimetype: 'text/plain',
         buffer: Buffer.from(''),
         size: 0,
-        stream: null,
+        stream: null as any,
         destination: '',
         filename: '',
         path: '',
@@ -307,7 +307,7 @@ describe('S3Service', () => {
 
     it('should handle very long file keys', async () => {
       const longKey = 'a'.repeat(1000) + '/test.jpg';
-      
+
       const mockResponse = {
         $metadata: {
           httpStatusCode: 200,
@@ -323,7 +323,7 @@ describe('S3Service', () => {
         mimetype: 'image/jpeg',
         buffer: Buffer.from('test'),
         size: 4,
-        stream: null,
+        stream: null as any,
         destination: '',
         filename: '',
         path: '',

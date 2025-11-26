@@ -59,9 +59,9 @@ export class S3Service {
 
       if (response.$metadata.httpStatusCode === 200) {
         const url = `https://${this.bucketName}.s3.${this.region}.amazonaws.com/${key}`;
-        
+
         this.logger.log(`File uploaded successfully: ${key}`);
-        
+
         return {
           key,
           url,
