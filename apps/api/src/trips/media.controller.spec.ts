@@ -1,15 +1,27 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { MediaController } from './media.controller';
-import { S3Service } from '../s3/s3.service';
+import { FileSystemService } from '../filesystem/filesystem.service';
+import { MediaFile } from './entities/media-file.entity';
 import { Role } from '../users/enums/role.enum';
 
 describe('MediaController', () => {
   let controller: MediaController;
-  let s3Service: S3Service;
+  let fileSystemService: FileSystemService;
 
-  const mockS3Service = {
+  const mockFileSystemService = {
     uploadFile: jest.fn(),
+    deleteFile: jest.fn(),
+  };
+
+  const mockMediaFileRepository = {
+    findOne: jest.fn(),
+    manager: {
+      connection: {
+        createQueryRunner: jest.fn(),
+      },
+    },
   };
 
   const mockActiveUser = {
@@ -24,14 +36,18 @@ describe('MediaController', () => {
       controllers: [MediaController],
       providers: [
         {
-          provide: S3Service,
-          useValue: mockS3Service,
+          provide: FileSystemService,
+          useValue: mockFileSystemService,
+        },
+        {
+          provide: getRepositoryToken(MediaFile),
+          useValue: mockMediaFileRepository,
         },
       ],
     }).compile();
 
     controller = module.get<MediaController>(MediaController);
-    s3Service = module.get<S3Service>(S3Service);
+    fileSystemService = module.get<FileSystemService>(FileSystemService);
 
     // Reset mocks
     jest.clearAllMocks();
@@ -60,37 +76,37 @@ describe('MediaController', () => {
       buffer: Buffer.from('fake-video-data'),
     } as Express.Multer.File;
 
-    const mockS3Response = {
+    const mockFileSystemResponse = {
       key: 'trips/1/images/1234567890-test-image.jpg',
-      url: 'https://bucket.s3.region.amazonaws.com/trips/1/images/1234567890-test-image.jpg',
-      bucket: 'test-bucket',
+      url: 'http://localhost:8001/uploads/trips/1/images/1234567890-test-image.jpg',
     };
 
     it('should upload an image file successfully', async () => {
-      mockS3Service.uploadFile.mockResolvedValue(mockS3Response);
+      mockFileSystemService.uploadFile.mockResolvedValue(mockFileSystemResponse);
 
       const result = await controller.uploadFile(1, mockImageFile, mockActiveUser);
 
       expect(result).toEqual({
         message: 'File uploaded successfully',
-        key: mockS3Response.key,
-        url: mockS3Response.url,
+        key: mockFileSystemResponse.key,
+        url: mockFileSystemResponse.url,
         type: 'image',
         originalName: 'test-image.jpg',
         mimeType: 'image/jpeg',
         size: 1024 * 1024,
       });
 
-      expect(mockS3Service.uploadFile).toHaveBeenCalledWith(
+      expect(mockFileSystemService.uploadFile).toHaveBeenCalledWith(
         mockImageFile,
         expect.stringContaining('trips/1/images/'),
       );
     });
 
     it('should upload a video file successfully', async () => {
-      mockS3Service.uploadFile.mockResolvedValue({
-        ...mockS3Response,
+      mockFileSystemService.uploadFile.mockResolvedValue({
+        ...mockFileSystemResponse,
         key: 'trips/1/videos/1234567890-test-video.mp4',
+        url: 'http://localhost:8001/uploads/trips/1/videos/1234567890-test-video.mp4',
       });
 
       const result = await controller.uploadFile(1, mockVideoFile, mockActiveUser);
@@ -105,7 +121,7 @@ describe('MediaController', () => {
         size: 10 * 1024 * 1024,
       });
 
-      expect(mockS3Service.uploadFile).toHaveBeenCalledWith(
+      expect(mockFileSystemService.uploadFile).toHaveBeenCalledWith(
         mockVideoFile,
         expect.stringContaining('trips/1/videos/'),
       );
@@ -116,7 +132,7 @@ describe('MediaController', () => {
         controller.uploadFile(1, null as any, mockActiveUser),
       ).rejects.toThrow(BadRequestException);
 
-      expect(mockS3Service.uploadFile).not.toHaveBeenCalled();
+      expect(mockFileSystemService.uploadFile).not.toHaveBeenCalled();
     });
 
     it('should throw BadRequestException for invalid file type', async () => {
@@ -129,7 +145,7 @@ describe('MediaController', () => {
         controller.uploadFile(1, invalidFile, mockActiveUser),
       ).rejects.toThrow(BadRequestException);
 
-      expect(mockS3Service.uploadFile).not.toHaveBeenCalled();
+      expect(mockFileSystemService.uploadFile).not.toHaveBeenCalled();
     });
 
     it('should throw BadRequestException when image exceeds size limit', async () => {
@@ -142,7 +158,7 @@ describe('MediaController', () => {
         controller.uploadFile(1, largeImageFile, mockActiveUser),
       ).rejects.toThrow(BadRequestException);
 
-      expect(mockS3Service.uploadFile).not.toHaveBeenCalled();
+      expect(mockFileSystemService.uploadFile).not.toHaveBeenCalled();
     });
 
     it('should throw BadRequestException when video exceeds size limit', async () => {
@@ -155,27 +171,27 @@ describe('MediaController', () => {
         controller.uploadFile(1, largeVideoFile, mockActiveUser),
       ).rejects.toThrow(BadRequestException);
 
-      expect(mockS3Service.uploadFile).not.toHaveBeenCalled();
+      expect(mockFileSystemService.uploadFile).not.toHaveBeenCalled();
     });
 
-    it('should sanitize filename in S3 key', async () => {
+    it('should sanitize filename in file key', async () => {
       const fileWithSpecialChars = {
         ...mockImageFile,
         originalname: 'test image@2024!.jpg',
       } as Express.Multer.File;
 
-      mockS3Service.uploadFile.mockResolvedValue(mockS3Response);
+      mockFileSystemService.uploadFile.mockResolvedValue(mockFileSystemResponse);
 
       await controller.uploadFile(1, fileWithSpecialChars, mockActiveUser);
 
-      expect(mockS3Service.uploadFile).toHaveBeenCalledWith(
+      expect(mockFileSystemService.uploadFile).toHaveBeenCalledWith(
         fileWithSpecialChars,
         expect.stringMatching(/test_image_2024_.jpg$/),
       );
     });
 
-    it('should generate unique S3 keys with timestamp', async () => {
-      mockS3Service.uploadFile.mockResolvedValue(mockS3Response);
+    it('should generate unique file keys with timestamp', async () => {
+      mockFileSystemService.uploadFile.mockResolvedValue(mockFileSystemResponse);
 
       const call1Promise = controller.uploadFile(1, mockImageFile, mockActiveUser);
       
@@ -186,16 +202,16 @@ describe('MediaController', () => {
 
       await Promise.all([call1Promise, call2Promise]);
 
-      const calls = mockS3Service.uploadFile.mock.calls;
+      const calls = mockFileSystemService.uploadFile.mock.calls;
       expect(calls[0][1]).not.toEqual(calls[1][1]);
     });
 
-    it('should organize files by tripId and type in S3', async () => {
-      mockS3Service.uploadFile.mockResolvedValue(mockS3Response);
+    it('should organize files by tripId and type in filesystem', async () => {
+      mockFileSystemService.uploadFile.mockResolvedValue(mockFileSystemResponse);
 
       await controller.uploadFile(42, mockImageFile, mockActiveUser);
 
-      expect(mockS3Service.uploadFile).toHaveBeenCalledWith(
+      expect(mockFileSystemService.uploadFile).toHaveBeenCalledWith(
         mockImageFile,
         expect.stringMatching(/^trips\/42\/images\//),
       );
