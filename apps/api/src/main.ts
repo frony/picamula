@@ -2,11 +2,29 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 import cookieParser from 'cookie-parser';
 import basicAuth from 'express-basic-auth';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Serve static files from uploads directory
+  const uploadDir = process.env.UPLOAD_DIR;
+  
+  if (!uploadDir) {
+    console.error('❌ ERROR: UPLOAD_DIR environment variable is not set!');
+    console.error('Please set UPLOAD_DIR in your .env file:');
+    console.error('  Local: UPLOAD_DIR=/Users/sandman/projects/picamula/uploads');
+    console.error('  Production: UPLOAD_DIR=/var/www/juntatribo/uploads');
+    process.exit(1);
+  }
+  
+  app.useStaticAssets(uploadDir, {
+    prefix: '/uploads',
+  });
+  console.log(`📁 Serving static files from: ${uploadDir}`);
 
   // Enable CORS
   app.enableCors({

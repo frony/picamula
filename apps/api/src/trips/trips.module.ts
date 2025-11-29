@@ -6,13 +6,13 @@ import { MediaController } from './media.controller';
 import { Trip } from './entities/trip.entity';
 import { MediaFile } from './entities/media-file.entity';
 import { NotesModule } from '../notes/notes.module';
-import { S3Module } from '../s3/s3.module';
+import { FileSystemModule } from '../filesystem/filesystem.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Trip, MediaFile]),
     NotesModule,
-    S3Module,
+    FileSystemModule,
   ],
   controllers: [TripsController, MediaController],
   providers: [TripsService],

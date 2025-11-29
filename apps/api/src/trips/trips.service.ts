@@ -5,7 +5,6 @@ import { Trip } from './entities/trip.entity';
 import { MediaFile } from './entities/media-file.entity';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
-import { S3Service } from '../s3/s3.service';
 
 @Injectable()
 export class TripsService {
@@ -16,7 +15,6 @@ export class TripsService {
     private tripsRepository: Repository<Trip>,
     @InjectRepository(MediaFile)
     private mediaFileRepository: Repository<MediaFile>,
-    private s3Service: S3Service,
   ) {}
 
   async create(createTripDto: CreateTripDto, ownerId: number): Promise<Trip> {

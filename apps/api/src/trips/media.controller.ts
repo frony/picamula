@@ -13,7 +13,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes, ApiBody
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Express } from 'express';
-import { S3Service } from '../s3/s3.service';
+import { FileSystemService } from '../filesystem/filesystem.service';
 import { MediaFile } from './entities/media-file.entity';
 import { Auth } from '../iam/authentication/decorators/auth.decorator';
 import { AuthType } from '../iam/authentication/enums/auth-type.enum';
@@ -26,7 +26,7 @@ import { ActiveUserData } from '../iam/interfaces/active-user-data.interface';
 @Controller('trips/:tripId/media')
 export class MediaController {
   constructor(
-    private readonly s3Service: S3Service,
+    private readonly fileSystemService: FileSystemService,
     @InjectRepository(MediaFile)
     private readonly mediaFileRepository: Repository<MediaFile>,
   ) {}
@@ -74,14 +74,14 @@ export class MediaController {
       );
     }
 
-    // Generate S3 key
+    // Generate file key
     const folder = isImage ? 'images' : 'videos';
     const timestamp = Date.now();
     const sanitizedFilename = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
     const key = `trips/${tripId}/${folder}/${timestamp}-${sanitizedFilename}`;
 
-    // Upload to S3
-    const result = await this.s3Service.uploadFile(file, key);
+    // Upload to filesystem
+    const result = await this.fileSystemService.uploadFile(file, key);
 
     return {
       message: 'File uploaded successfully',
@@ -118,8 +118,8 @@ export class MediaController {
       throw new BadRequestException('You do not have permission to delete this file');
     }
 
-    // Store S3 key for deletion after DB transaction
-    const s3Key = mediaFile.key;
+    // Store file key for deletion after DB transaction
+    const fileKey = mediaFile.key;
 
     // Use transaction to ensure database consistency
     const queryRunner = this.mediaFileRepository.manager.connection.createQueryRunner();
@@ -133,14 +133,14 @@ export class MediaController {
       // Commit transaction
       await queryRunner.commitTransaction();
 
-      // After successful DB deletion, delete from S3 (best effort)
-      // If this fails, we'll have an orphaned S3 file, but DB is consistent
+      // After successful DB deletion, delete from filesystem (best effort)
+      // If this fails, we'll have an orphaned file, but DB is consistent
       try {
-        await this.s3Service.deleteFile(s3Key);
-      } catch (s3Error) {
-        // Log S3 deletion error but don't fail the request
+        await this.fileSystemService.deleteFile(fileKey);
+      } catch (fsError) {
+        // Log filesystem deletion error but don't fail the request
         // since DB deletion was successful
-        console.error(`Failed to delete S3 file ${s3Key}:`, s3Error);
+        console.error(`Failed to delete file ${fileKey}:`, fsError);
       }
 
       return {

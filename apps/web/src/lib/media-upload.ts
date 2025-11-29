@@ -38,8 +38,6 @@ async function loadFFmpeg(): Promise<FFmpeg> {
   if (!ffmpegLoaded) {
     try {
       const baseURL = `https://unpkg.com/@ffmpeg/core@${FFMPEG_CORE_VERSION}/dist/umd`
-      console.log('Loading FFmpeg from:', baseURL)
-      console.log('FFmpeg version:', FFMPEG_CORE_VERSION)
       await ffmpegInstance.load({
         coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
         wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
