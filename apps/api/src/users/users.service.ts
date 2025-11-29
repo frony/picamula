@@ -51,13 +51,29 @@ export class UsersService {
       await this.emailVerificationTokenRepository.save(verification);
       // Send email (don't let email failure prevent user creation)
       try {
-        const baseUrl = process.env.AUTH_URL || 'http://localhost';
-        const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
+        // AUTH_URL must be set in production to your actual domain (e.g., https://juntatribo.com)
+        // In development, defaults to localhost:3003
+        const baseUrl = process.env.AUTH_URL || (process.env.NODE_ENV === 'production' 
+          ? 'https://juntatribo.com' 
+          : 'http://localhost:3003');
+        const verifyUrl = `${baseUrl}/verify-email?token=${token}`;
         await this.mailService.sendMail({
           email: newUser.email,
-          subject: 'Verify your email',
+          subject: 'Verify your email - JuntaTribo',
           message: `Please verify your email by clicking the following link: ${verifyUrl}`,
-          htmlMessage: `<p>Please verify your email by clicking the following link:</p><p><a href="${verifyUrl}">${verifyUrl}</a></p>`
+          htmlMessage: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #4F46E5;">Welcome to JuntaTribo!</h2>
+              <p>Thank you for signing up. Please verify your email address to complete your registration.</p>
+              <p style="margin: 30px 0;">
+                <a href="${verifyUrl}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Verify Email</a>
+              </p>
+              <p style="color: #6B7280; font-size: 14px;">Or copy and paste this link into your browser:</p>
+              <p style="color: #6B7280; font-size: 14px; word-break: break-all;">${verifyUrl}</p>
+              <p style="color: #6B7280; font-size: 12px; margin-top: 30px;">This link will expire in 1 hour.</p>
+              <p style="color: #6B7280; font-size: 12px;">If you didn't create an account, you can safely ignore this email.</p>
+            </div>
+          `
         });
         this.logger.log(`Verification email sent successfully to ${newUser.email}`);
       } catch (emailError) {

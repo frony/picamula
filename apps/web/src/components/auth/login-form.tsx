@@ -1,19 +1,24 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/hooks/use-auth'
 import { useToast } from '@/hooks/use-toast'
 import type { LoginDto } from '@junta-tribo/shared'
+import { useEffect } from 'react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Mail } from 'lucide-react'
 
 interface LoginFormData extends LoginDto {}
 
 export function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { login, isLoading } = useAuth()
   const { toast } = useToast()
+  const showVerificationMessage = searchParams.get('verified') === 'false'
 
   const {
     register: registerField,
@@ -30,16 +35,37 @@ export function LoginForm() {
       })
       router.push('/')
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Something went wrong',
-        variant: 'destructive',
-      })
+      const errorMessage = error.response?.data?.message || 'Something went wrong'
+      
+      // Check if error is related to email verification
+      if (errorMessage.toLowerCase().includes('verify') || 
+          errorMessage.toLowerCase().includes('verification')) {
+        toast({
+          title: 'Email Not Verified',
+          description: 'Please verify your email address before logging in. Check your inbox for the verification link.',
+          variant: 'destructive',
+          duration: 7000,
+        })
+      } else {
+        toast({
+          title: 'Error',
+          description: errorMessage,
+          variant: 'destructive',
+        })
+      }
     }
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {showVerificationMessage && (
+        <Alert className="bg-blue-50 border-blue-200">
+          <Mail className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-900">
+            Please check your email and verify your account before logging in.
+          </AlertDescription>
+        </Alert>
+      )}
       <div>
         <Input
           type="email"

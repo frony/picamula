@@ -123,6 +123,9 @@ export const authApi = {
     const refreshToken = localStorage.getItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN)
     return api.post(API_ENDPOINTS.AUTH.REFRESH, { refreshToken })
   },
+  
+  verifyEmail: (token: string): Promise<AxiosResponse<{ message: string }>> =>
+    api.post(API_ENDPOINTS.AUTH.VERIFY_EMAIL, { token }),
 }
 
 // Users API

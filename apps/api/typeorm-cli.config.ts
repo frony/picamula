@@ -13,6 +13,8 @@ import { EmailConfirmation } from './src/iam/authentication/entities/email-confi
 import { UserReplaceNameByFirstAndLastName1759355264384 } from './src/migrations/1759355264384-UserReplaceNameByFirstAndLastName';
 import { TripAddSlugAndChangeIdToNumber1730568000000 } from './src/migrations/1730568000000-TripAddSlugAndChangeIdToNumber';
 import { CreateMediaFileTable1732406400000 } from './src/migrations/1732406400000-CreateMediaFileTable';
+import { CreateEmailVerificationTokenTable1759360000000 } from './src/migrations/1759360000000-CreateEmailVerificationTokenTable';
+import { AddIsVerifiedToUser1759360100000 } from './src/migrations/1759360100000-AddIsVerifiedToUser';
 
 // Load .env from project root
 config({ path: join(__dirname, '../../../.env') });
@@ -36,9 +38,11 @@ export default new DataSource({
     EmailConfirmation,
   ],
   migrations: [
-    UserReplaceNameByFirstAndLastName1759355264384,
     TripAddSlugAndChangeIdToNumber1730568000000,
     CreateMediaFileTable1732406400000,
+    UserReplaceNameByFirstAndLastName1759355264384,
+    CreateEmailVerificationTokenTable1759360000000,
+    AddIsVerifiedToUser1759360100000,
   ],
   migrationsTableName: 'migrations',
   synchronize: false,

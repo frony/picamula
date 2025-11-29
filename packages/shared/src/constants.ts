@@ -5,6 +5,7 @@ export const API_ENDPOINTS = {
     LOGOUT: '/authentication/logout',
     REFRESH: '/authentication/refresh-tokens',
     ME: '/users/me', // Users endpoint now handles user data
+    VERIFY_EMAIL: '/users/verify-email',
   },
   USERS: {
     BASE: '/users',

@@ -15,12 +15,7 @@ import * as path from 'path';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: [
-        path.resolve(process.cwd(), '.env'),  // Absolute path to root .env
-        '../../.env',           // For development
-        '../../../.env',        // For production (from dist folder)
-        '.env'                  // Fallback to local .env
-      ],
+      envFilePath: '../../.env',  // Root .env (two levels up from apps/api)
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
