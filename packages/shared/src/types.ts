@@ -49,6 +49,44 @@ export interface UpdateUserDto {
   phone?: string;
 }
 
+// Media file types
+export enum MediaFileType {
+  IMAGE = 'image',
+  VIDEO = 'video',
+}
+
+export interface MediaFile {
+  id: number;
+  key: string;
+  url: string;
+  type: MediaFileType;
+  originalName?: string;
+  mimeType?: string;
+  size?: number;
+  order: number;
+  width?: number;
+  height?: number;
+  duration?: number;
+  thumbnailKey?: string;
+  tripId: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateMediaFileDto {
+  key: string;
+  url: string;
+  type: MediaFileType;
+  originalName?: string;
+  mimeType?: string;
+  size?: number;
+  order?: number;
+  width?: number;
+  height?: number;
+  duration?: number;
+  thumbnailKey?: string;
+}
+
 // Trip types
 export enum TripStatus {
   PLANNING = 'planning',
@@ -71,6 +109,7 @@ export interface Trip {
   participants?: string[];
   itinerary?: any[];
   notes?: Note[];
+  mediaFiles?: MediaFile[];
   owner: User;
   ownerId: number;
   createdAt: Date;
@@ -99,6 +138,7 @@ export interface UpdateTripDto {
   budget?: number;
   participants?: string[];
   itinerary?: any[];
+  mediaFiles?: CreateMediaFileDto[];
 }
 
 // Auth types

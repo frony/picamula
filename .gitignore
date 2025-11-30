@@ -113,3 +113,6 @@ Thumbs.db
 
 # Turbo
 .turbo
+
+# Uploaded files (local development)
+uploads/

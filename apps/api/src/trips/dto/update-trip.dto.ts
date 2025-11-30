@@ -8,8 +8,11 @@ import {
   IsArray,
   MaxLength,
   Min,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { TripStatus } from '../entities/trip.entity';
+import { CreateMediaFileDto } from './create-media-file.dto';
 
 export class UpdateTripDto {
   @ApiProperty({
@@ -100,4 +103,15 @@ export class UpdateTripDto {
   })
   @IsOptional()
   itinerary?: any[];
+
+  @ApiProperty({
+    description: 'Array of media files (images/videos) to add to the trip',
+    type: [CreateMediaFileDto],
+    required: false,
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateMediaFileDto)
+  @IsOptional()
+  mediaFiles?: CreateMediaFileDto[];
 }

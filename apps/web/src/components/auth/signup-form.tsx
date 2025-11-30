@@ -26,9 +26,10 @@ export function SignupForm() {
       const result = await register(data)
       toast({
         title: 'Success',
-        description: `Account created successfully! Welcome ${result.firstName} ${result.lastName}. Please log in to continue.`,
+        description: `Account created successfully! We've sent a verification email to ${data.email}. Please check your inbox and verify your email before logging in.`,
+        duration: 7000,
       })
-      router.push('/login')
+      router.push('/login?verified=false')
     } catch (error: any) {
       toast({
         title: 'Error',

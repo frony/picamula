@@ -119,12 +119,10 @@ export class AuthenticationService {
     }
 
     this.logger.log(`Checking verification: isVerified=${user.isVerified}, type=${typeof user.isVerified}, strict false check=${user.isVerified === false}`);
-    // TODO: Re-enable email verification once email configuration is fixed
-    // if (user.isVerified === false) {
-    //   this.logger.error(`${signInDto.email}: Email not verified`);
-    //   throw new UnauthorizedException('Please verify your email before logging in');
-    // }
-    this.logger.log(`Email verification temporarily disabled for development`);
+    if (user.isVerified === false) {
+      this.logger.error(`${signInDto.email}: Email not verified`);
+      throw new UnauthorizedException('Please verify your email before logging in');
+    }
 
     if (user.isTfaEnabled) {
       const isValid = this.otpAuthService.verifyCode(

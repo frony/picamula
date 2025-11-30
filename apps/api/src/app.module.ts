@@ -7,6 +7,7 @@ import { IamModule } from './iam/iam.module';
 import { UsersModule } from './users/users.module';
 import { TripsModule } from './trips/trips.module';
 import { NotesModule } from './notes/notes.module';
+import { S3Module } from './s3/s3.module';
 import * as redisStore from 'cache-manager-redis-store';
 import * as path from 'path';
 
@@ -14,12 +15,7 @@ import * as path from 'path';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: [
-        path.resolve(process.cwd(), '.env'),  // Absolute path to root .env
-        '../../.env',           // For development
-        '../../../.env',        // For production (from dist folder)
-        '.env'                  // Fallback to local .env
-      ],
+      envFilePath: '../../.env',  // Root .env (two levels up from apps/api)
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -94,6 +90,7 @@ import * as path from 'path';
     UsersModule,
     TripsModule,
     NotesModule,
+    S3Module,
   ],
   controllers: [],
   providers: [],

@@ -11,6 +11,7 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Note } from '../../notes/entities/note.entity';
+import { MediaFile } from './media-file.entity';
 
 export enum TripStatus {
   PLANNING = 'planning',
@@ -65,6 +66,12 @@ export class Trip {
     eager: false 
   })
   notes: Note[];
+
+  @OneToMany(() => MediaFile, (mediaFile) => mediaFile.trip, { 
+    cascade: true,
+    eager: false 
+  })
+  mediaFiles: MediaFile[];
 
   @ManyToOne(() => User, (user) => user.trips, { eager: true })
   @JoinColumn({ name: 'ownerId' })

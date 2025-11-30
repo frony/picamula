@@ -123,6 +123,9 @@ export const authApi = {
     const refreshToken = localStorage.getItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN)
     return api.post(API_ENDPOINTS.AUTH.REFRESH, { refreshToken })
   },
+  
+  verifyEmail: (token: string): Promise<AxiosResponse<{ message: string }>> =>
+    api.post(API_ENDPOINTS.AUTH.VERIFY_EMAIL, { token }),
 }
 
 // Users API
@@ -185,6 +188,12 @@ export const notesApi = {
   
   delete: (tripId: string, noteId: string): Promise<AxiosResponse<void>> =>
     api.delete(`${API_ENDPOINTS.TRIPS.BASE}/${tripId}/notes/${noteId}`),
+}
+
+// Media API
+export const mediaApi = {
+  delete: (tripId: number, mediaId: number): Promise<AxiosResponse<{ message: string }>> =>
+    api.delete(`${API_ENDPOINTS.TRIPS.BASE}/${tripId}/media/${mediaId}`),
 }
 
 export default api

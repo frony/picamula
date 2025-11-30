@@ -1,15 +1,20 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan } from 'typeorm';
+import { Repository, MoreThan, QueryRunner } from 'typeorm';
 import { Trip } from './entities/trip.entity';
+import { MediaFile } from './entities/media-file.entity';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
 
 @Injectable()
 export class TripsService {
+  private readonly logger = new Logger(TripsService.name);
+
   constructor(
     @InjectRepository(Trip)
     private tripsRepository: Repository<Trip>,
+    @InjectRepository(MediaFile)
+    private mediaFileRepository: Repository<MediaFile>,
   ) {}
 
   async create(createTripDto: CreateTripDto, ownerId: number): Promise<Trip> {
@@ -30,7 +35,7 @@ export class TripsService {
   async findOne(id: number, userId: number): Promise<Trip> {
     const trip = await this.tripsRepository.findOne({
       where: { id },
-      relations: ['owner', 'notes', 'notes.author'],
+      relations: ['owner', 'notes', 'notes.author', 'mediaFiles'],
       order: {
         notes: {
           date: 'DESC',
@@ -54,7 +59,7 @@ export class TripsService {
   async findBySlug(slug: string, userId: number): Promise<Trip> {
     const trip = await this.tripsRepository.findOne({
       where: { slug },
-      relations: ['owner', 'notes', 'notes.author'],
+      relations: ['owner', 'notes', 'notes.author', 'mediaFiles'],
       order: {
         notes: {
           date: 'DESC',
@@ -77,14 +82,82 @@ export class TripsService {
 
   async update(id: number, updateTripDto: UpdateTripDto, userId: number): Promise<Trip> {
     const trip = await this.findOne(id, userId);
-    Object.assign(trip, updateTripDto);
-    return await this.tripsRepository.save(trip);
+    
+    // Extract mediaFiles from DTO and handle separately
+    const { mediaFiles, ...tripData } = updateTripDto;
+    
+    // Use transaction to ensure atomicity
+    const queryRunner = this.tripsRepository.manager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Update trip basic data
+      Object.assign(trip, tripData);
+      const updatedTrip = await queryRunner.manager.save(Trip, trip);
+
+      // Handle media files if provided
+      if (mediaFiles && mediaFiles.length > 0) {
+        await this.processMediaFiles(mediaFiles, trip.id, queryRunner);
+      }
+
+      // Commit transaction
+      await queryRunner.commitTransaction();
+
+      // Return trip with media files included
+      return await this.tripsRepository.findOne({
+        where: { id: trip.id },
+        relations: ['owner', 'notes', 'mediaFiles'],
+      });
+    } catch (error) {
+      // Rollback transaction on error
+      await queryRunner.rollbackTransaction();
+      this.logger.error(`Error updating trip ${id}:`, error);
+      throw error;
+    } finally {
+      // Release query runner
+      await queryRunner.release();
+    }
   }
 
   async updateBySlug(slug: string, updateTripDto: UpdateTripDto, userId: number): Promise<Trip> {
     const trip = await this.findBySlug(slug, userId);
-    Object.assign(trip, updateTripDto);
-    return await this.tripsRepository.save(trip);
+    
+    // Extract mediaFiles from DTO and handle separately
+    const { mediaFiles, ...tripData } = updateTripDto;
+    
+    // Use transaction to ensure atomicity
+    const queryRunner = this.tripsRepository.manager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Update trip basic data
+      Object.assign(trip, tripData);
+      const updatedTrip = await queryRunner.manager.save(Trip, trip);
+
+      // Handle media files if provided
+      if (mediaFiles && mediaFiles.length > 0) {
+        await this.processMediaFiles(mediaFiles, trip.id, queryRunner);
+      }
+
+      // Commit transaction
+      await queryRunner.commitTransaction();
+
+      // Return trip with media files included
+      return await this.tripsRepository.findOne({
+        where: { id: trip.id },
+        relations: ['owner', 'notes', 'mediaFiles'],
+      });
+    } catch (error) {
+      // Rollback transaction on error
+      await queryRunner.rollbackTransaction();
+      this.logger.error(`Error updating trip ${slug}:`, error);
+      throw error;
+    } finally {
+      // Release query runner
+      await queryRunner.release();
+    }
   }
 
   async remove(id: number, userId: number): Promise<void> {
@@ -112,6 +185,43 @@ export class TripsService {
       },
       order: { startDate: 'ASC' }
     });
+  }
+
+  /**
+   * Process and save media files for a trip
+   * Saves metadata to database within a transaction
+   */
+  private async processMediaFiles(
+    mediaFileDtos: any[],
+    tripId: number,
+    queryRunner: QueryRunner,
+  ): Promise<void> {
+    try {
+      for (const mediaDto of mediaFileDtos) {
+        // Create MediaFile entity
+        const mediaFile = this.mediaFileRepository.create({
+          key: mediaDto.key,
+          url: mediaDto.url,
+          type: mediaDto.type,
+          originalName: mediaDto.originalName,
+          mimeType: mediaDto.mimeType,
+          size: mediaDto.size,
+          order: mediaDto.order || 0,
+          width: mediaDto.width,
+          height: mediaDto.height,
+          duration: mediaDto.duration,
+          thumbnailKey: mediaDto.thumbnailKey,
+          tripId: tripId,
+        });
+
+        // Save using the query runner's manager (part of transaction)
+        await queryRunner.manager.save(MediaFile, mediaFile);
+        this.logger.log(`Media file saved: ${mediaDto.key} for trip ${tripId}`);
+      }
+    } catch (error) {
+      this.logger.error(`Error processing media files for trip ${tripId}:`, error);
+      throw error;
+    }
   }
 
 }

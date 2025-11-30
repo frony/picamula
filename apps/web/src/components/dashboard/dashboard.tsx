@@ -38,22 +38,6 @@ export function Dashboard() {
     }
   }
 
-  const handleLogout = async () => {
-    try {
-      await logout()
-      toast({
-        title: 'Success',
-        description: 'Logged out successfully',
-      })
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to logout',
-        variant: 'destructive',
-      })
-    }
-  }
-
   const handleCreateTrip = () => {
     router.push('/trips/new')
   }
