@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input'
 import { useAuth } from '@/hooks/use-auth'
 import { useToast } from '@/hooks/use-toast'
 import type { RegisterDto } from '@junta-tribo/shared'
+import { useState } from 'react'
+import { Eye, EyeOff } from 'lucide-react'
 
 interface SignupFormData extends RegisterDto {}
 
@@ -14,6 +16,7 @@ export function SignupForm() {
   const router = useRouter()
   const { register, isLoading } = useAuth()
   const { toast } = useToast()
+  const [showPassword, setShowPassword] = useState(false)
 
   const {
     register: registerField,
@@ -89,17 +92,32 @@ export function SignupForm() {
       </div>
 
       <div>
-        <Input
-          type="password"
-          placeholder="Password"
-          {...registerField('password', {
-            required: 'Password is required',
-            minLength: {
-              value: 6,
-              message: 'Password must be at least 6 characters',
-            },
-          })}
-        />
+        <div className="relative">
+          <Input
+            type={showPassword ? "text" : "password"}
+            placeholder="Password"
+            {...registerField('password', {
+              required: 'Password is required',
+              minLength: {
+                value: 6,
+                message: 'Password must be at least 6 characters',
+              },
+            })}
+            className="pr-10"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
+            {showPassword ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+          </button>
+        </div>
         {errors.password && (
           <p className="text-sm text-red-500 mt-1">{errors.password.message}</p>
         )}
