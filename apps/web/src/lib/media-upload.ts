@@ -1,8 +1,8 @@
-import axios from 'axios'
 import { FFmpeg } from '@ffmpeg/ffmpeg'
 import { fetchFile, toBlobURL } from '@ffmpeg/util'
+import api from './api'
+import { LOCAL_STORAGE_KEYS } from '@junta-tribo/shared'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
 
 // FFmpeg core version - can be configured via environment variable
 // Remove any quotes that might be in the environment variable
@@ -245,12 +245,11 @@ async function prepareFileForUpload(
 }
 
 /**
- * Upload a single media file to S3
+ * Upload a single media file
  */
 export async function uploadMediaFile(
   tripId: number,
   file: File,
-  token: string,
   onCompressionProgress?: (progress: number) => void
 ): Promise<UploadedMediaFile> {
   // Prepare file (compress if image/video)
@@ -259,12 +258,11 @@ export async function uploadMediaFile(
   const formData = new FormData()
   formData.append('file', preparedFile)
 
-  const response = await axios.post(
-    `${API_BASE_URL}/trips/${tripId}/media/upload`,
+  const response = await api.post(
+    `/trips/${tripId}/media/upload`,
     formData,
     {
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'multipart/form-data',
       },
     }
@@ -274,12 +272,11 @@ export async function uploadMediaFile(
 }
 
 /**
- * Upload multiple media files to S3
+ * Upload multiple media files
  */
 export async function uploadMediaFiles(
   tripId: number,
   files: File[],
-  token: string,
   onProgress?: (completed: number, total: number) => void,
   onFileCompressionProgress?: (fileName: string, progress: number) => void
 ): Promise<UploadedMediaFile[]> {
@@ -290,8 +287,7 @@ export async function uploadMediaFiles(
     try {
       const result = await uploadMediaFile(
         tripId, 
-        file, 
-        token,
+        file,
         (progress) => onFileCompressionProgress?.(file.name, progress)
       )
       uploadedFiles.push(result)
