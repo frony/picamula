@@ -2,9 +2,7 @@ import axios from 'axios'
 import { FFmpeg } from '@ffmpeg/ffmpeg'
 import { fetchFile, toBlobURL } from '@ffmpeg/util'
 
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://www.juntatribo.com/api' 
-  : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001')
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
 
 // FFmpeg core version - can be configured via environment variable
 // Remove any quotes that might be in the environment variable
