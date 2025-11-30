@@ -29,9 +29,7 @@ const getAuthStore = () => {
   return null
 }
 
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://www.juntatribo.com/api' 
-  : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001')
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
 
 // Create axios instance
 const api = axios.create({
