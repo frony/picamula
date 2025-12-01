@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input'
 import { useAuth } from '@/hooks/use-auth'
 import { useToast } from '@/hooks/use-toast'
 import type { LoginDto } from '@junta-tribo/shared'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Mail, Eye, EyeOff } from 'lucide-react'
+import { Mail, Eye, EyeOff, CheckCircle2 } from 'lucide-react'
+import Link from 'next/link'
 
 interface LoginFormData extends LoginDto {}
 
@@ -19,7 +20,18 @@ export function LoginForm() {
   const { login, isLoading } = useAuth()
   const { toast } = useToast()
   const showVerificationMessage = searchParams.get('verified') === 'false'
+  const showResetSuccess = searchParams.get('reset') === 'success'
   const [showPassword, setShowPassword] = useState(false)
+
+  useEffect(() => {
+    if (showResetSuccess) {
+      toast({
+        title: 'Password reset successful',
+        description: 'You can now log in with your new password.',
+        duration: 5000,
+      })
+    }
+  }, [showResetSuccess, toast])
 
   const {
     register: registerField,
@@ -64,6 +76,14 @@ export function LoginForm() {
           <Mail className="h-4 w-4 text-blue-600" />
           <AlertDescription className="text-blue-900">
             Please check your email and verify your account before logging in.
+          </AlertDescription>
+        </Alert>
+      )}
+      {showResetSuccess && (
+        <Alert className="bg-green-50 border-green-200">
+          <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-900">
+            Your password has been reset successfully. You can now log in with your new password.
           </AlertDescription>
         </Alert>
       )}
@@ -124,6 +144,15 @@ export function LoginForm() {
         {errors.password && (
           <p className="text-sm text-red-500 mt-1">{errors.password.message}</p>
         )}
+      </div>
+
+      <div className="flex items-center justify-end">
+        <Link
+          href="/forgot-password"
+          className="text-sm text-blue-600 hover:underline"
+        >
+          Forgot password?
+        </Link>
       </div>
 
       <Button type="submit" className="w-full" disabled={isLoading}>
