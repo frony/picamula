@@ -20,6 +20,29 @@ export interface UpdateNoteDto {
   date?: string;
 }
 
+// Todo Item types
+export enum TodoStatus {
+  PENDING = 'pending',
+  COMPLETED = 'completed',
+}
+
+export interface TodoItem {
+  id: number;
+  title: string;
+  status: TodoStatus;
+  userId: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateTodoItemDto {
+  title: string;
+}
+
+export interface UpdateTodoItemDto {
+  status: TodoStatus;
+}
+
 // User types
 export interface User {
   id: number; // Changed to number for IAM

@@ -194,4 +194,42 @@ export const mediaApi = {
     api.delete(`${API_ENDPOINTS.TRIPS.BASE}/${tripId}/media/${mediaId}`),
 }
 
+// Todos API
+export interface TodoItem {
+  id: number;
+  title: string;
+  status: 'pending' | 'completed';
+  userId: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTodoDto {
+  title: string;
+}
+
+export interface UpdateTodoDto {
+  status: 'pending' | 'completed';
+}
+
+export const todosApi = {
+  getAll: (): Promise<AxiosResponse<TodoItem[]>> =>
+    api.get('/todos'),
+  
+  create: (data: CreateTodoDto): Promise<AxiosResponse<TodoItem>> =>
+    api.post('/todos', data),
+  
+  update: (id: number, data: UpdateTodoDto): Promise<AxiosResponse<TodoItem>> =>
+    api.patch(`/todos/${id}`, data),
+  
+  toggle: (id: number): Promise<AxiosResponse<TodoItem>> =>
+    api.patch(`/todos/${id}/toggle`),
+  
+  delete: (id: number): Promise<AxiosResponse<void>> =>
+    api.delete(`/todos/${id}`),
+  
+  resetAll: (): Promise<AxiosResponse<TodoItem[]>> =>
+    api.post('/todos/reset'),
+}
+
 export default api

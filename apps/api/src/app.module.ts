@@ -6,6 +6,7 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { IamModule } from './iam/iam.module';
 import { UsersModule } from './users/users.module';
 import { TripsModule } from './trips/trips.module';
+import { TodosModule } from './todos/todos.module';
 import { NotesModule } from './notes/notes.module';
 import { S3Module } from './s3/s3.module';
 import * as redisStore from 'cache-manager-redis-store';
@@ -21,25 +22,39 @@ import * as path from 'path';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
         // Debug logging
+        const dbHost = configService.get('DB_HOST', 'localhost');
+        const dbPort = parseInt(configService.get('DB_PORT', '5432'), 10);
+        const dbUsername = configService.get('DB_USERNAME', 'postgres');
+        const dbPassword = configService.get('DB_PASSWORD', 'password');
+        const dbName = configService.get('DB_NAME', 'junta_tribo');
+        
         console.log('=== DATABASE CONNECTION DEBUG ===');
-        console.log('Host:', configService.get('DB_HOST', 'localhost'));
-        console.log('Port:', configService.get('DB_PORT', 5432));
-        console.log('Username:', configService.get('DB_USERNAME', 'postgres'));
-        console.log('Database:', configService.get('DB_NAME', 'junta_tribo'));
+        console.log('Host:', dbHost);
+        console.log('Port:', dbPort, 'Type:', typeof dbPort);
+        console.log('Username:', dbUsername);
+        console.log('Database:', dbName);
         console.log('================================');
         
         return {
           type: 'postgres',
-          host: configService.get('DB_HOST', 'localhost'),
-          port: configService.get('DB_PORT', 5432),
-          username: configService.get('DB_USERNAME', 'postgres'),
-          password: configService.get('DB_PASSWORD', 'password'),
-          database: configService.get('DB_NAME', 'junta_tribo'),
+          host: dbHost,
+          port: dbPort,
+          username: dbUsername,
+          password: dbPassword,
+          database: dbName,
           autoLoadEntities: true,
           // synchronize: true,
           logging: true,
           migrations: ['dist/database/migrations/*.js'],
           migrationsTableName: 'migrations',
+          // Connection retry options
+          retryAttempts: 10,
+          retryDelay: 3000,
+          connectTimeoutMS: 10000,
+          extra: {
+            max: 10, // Maximum pool size
+            connectionTimeoutMillis: 10000,
+          },
         };
       },
       inject: [ConfigService],
@@ -89,6 +104,7 @@ import * as path from 'path';
     IamModule,
     UsersModule,
     TripsModule,
+    TodosModule,
     NotesModule,
     S3Module,
   ],

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from "next/navigation";
 import { useAuth } from '@/hooks/use-auth';
 import { useEffect, useState } from 'react';
-import { LogOut, UserPlus, LogIn } from 'lucide-react';
+import { LogOut, UserPlus, LogIn, ClipboardList, Plane } from 'lucide-react';
 
 export default function Nav() {
     const pathname = usePathname();
@@ -28,7 +28,14 @@ export default function Nav() {
             {/* <Link href="/" className={cn('text-sm font-medium transition-colors hover:text-primary', isHome ? 'text-primary' : 'text-muted-foreground')}>Home</Link> */}
             {mounted && isAuthenticated && (
                 <>
-                    <Link href="/" className={cn('text-sm font-medium transition-colors text-popover', isHome ? 'text-popover' : 'hover:underline')}>Trips</Link>
+                    <Link href="/" className={cn('flex items-center text-sm font-medium transition-colors text-popover hover:underline', isHome ? 'text-popover' : '')}>
+                        <Plane className="w-4 h-4 md:mr-2" />
+                        <span className="hidden md:inline">Trips</span>
+                    </Link>
+                    <Link href="/trip-checklist" className={cn('flex items-center text-sm font-medium transition-colors text-popover hover:underline', pathname === '/trip-checklist' ? 'text-popover' : '')}>
+                        <ClipboardList className="w-4 h-4 md:mr-2" />
+                        <span className="hidden md:inline">Checklist</span>
+                    </Link>
                     <div className="flex items-center space-x-2 md:space-x-4">
                     <button 
                         onClick={handleLogout}
