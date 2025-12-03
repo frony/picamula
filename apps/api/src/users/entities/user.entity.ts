@@ -8,7 +8,7 @@ import {
 import { ApiKey } from '../api-keys/entities/api-key.entity';
 import { Trip } from '../../trips/entities/trip.entity';
 import { Note } from '../../notes/entities/note.entity';
-// import { Video } from '../../video/entities/video.entity';
+import { TodoItem } from '../../todos/todo-item.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { BaseEntity } from '../../common/entities/base.entity';
 
@@ -128,17 +128,12 @@ export class User extends BaseEntity {
   @OneToMany(() => Note, (note) => note.author)
   notes: Note[];
 
-  // @ApiProperty({
-  //   example: '[Video]',
-  //   description: 'List of videos uploaded by the user',
-  // })
-  // @JoinTable()
-  // @OneToMany(() => Video, (video) => video.user, {
-  //   nullable: true,
-  //   cascade: true,
-  // })
-  // @Field(() => [Video], { nullable: true })
-  // videos?: Video[];
+  @ApiProperty({
+    example: '[TodoItem]',
+    description: 'List of TODO items created by the user',
+  })
+  @OneToMany(() => TodoItem, (todoItem) => todoItem.user)
+  todoItems: TodoItem[];
 }
 
 @Entity()
