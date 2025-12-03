@@ -9,14 +9,18 @@ import { useToast } from '@/hooks/use-toast'
 import type { RegisterDto } from '@junta-tribo/shared'
 import { useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
+import { Captcha } from './captcha'
 
-interface SignupFormData extends RegisterDto {}
+interface SignupFormData extends RegisterDto {
+  captchaToken?: string;
+}
 
 export function SignupForm() {
   const router = useRouter()
   const { register, isLoading } = useAuth()
   const { toast } = useToast()
   const [showPassword, setShowPassword] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
 
   const {
     register: registerField,
@@ -26,7 +30,8 @@ export function SignupForm() {
 
   const onSubmit = async (data: SignupFormData) => {
     try {
-      const result = await register(data)
+      const registerData = { ...data, captchaToken }
+      const result = await register(registerData)
       toast({
         title: 'Success',
         description: `Account created successfully! We've sent a verification email to ${data.email}. Please check your inbox and verify your email before logging in.`,
@@ -34,9 +39,10 @@ export function SignupForm() {
       })
       router.push('/login?verified=false')
     } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || 'Something went wrong'
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Something went wrong',
+        description: typeof errorMessage === 'string' ? errorMessage : 'Something went wrong',
         variant: 'destructive',
       })
     }
@@ -133,7 +139,12 @@ export function SignupForm() {
         )}
       </div>
 
-      <Button type="submit" className="w-full" disabled={isLoading}>
+      <Captcha 
+        onSuccess={(token) => setCaptchaToken(token)}
+        onError={(error) => console.error('CAPTCHA error:', error)}
+      />
+
+      <Button type="submit" className="w-full" disabled={isLoading || !captchaToken}>
         {isLoading ? 'Creating account...' : 'Sign Up'}
       </Button>
     </form>

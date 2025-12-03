@@ -2,6 +2,7 @@ import {
   IsEmail,
   IsNumberString,
   IsOptional,
+  IsString,
   MinLength,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
@@ -28,4 +29,12 @@ export class SignInDto {
   @IsOptional()
   @IsNumberString()
   tfaCode?: string;
+
+  @ApiProperty({
+    example: 'base64EncodedCaptchaPayload',
+    description: 'ALTCHA captcha verification token',
+  })
+  @IsOptional()
+  @IsString()
+  captchaToken?: string;
 }
