@@ -11,8 +11,11 @@ import { useState, useEffect } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Mail, Eye, EyeOff, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
+import { Captcha } from './captcha'
 
-interface LoginFormData extends LoginDto {}
+interface LoginFormData extends LoginDto {
+  captchaToken?: string;
+}
 
 export function LoginForm() {
   const router = useRouter()
@@ -22,6 +25,7 @@ export function LoginForm() {
   const showVerificationMessage = searchParams.get('verified') === 'false'
   const showResetSuccess = searchParams.get('reset') === 'success'
   const [showPassword, setShowPassword] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
 
   useEffect(() => {
     if (showResetSuccess) {
@@ -41,18 +45,20 @@ export function LoginForm() {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      await login(data)
+      const loginData = { ...data, captchaToken }
+      await login(loginData)
       toast({
         title: 'Success',
         description: 'Logged in successfully!',
       })
       router.push('/')
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Something went wrong'
+      const errorMessage = error.response?.data?.message || error.message || 'Something went wrong'
       
       // Check if error is related to email verification
-      if (errorMessage.toLowerCase().includes('verify') || 
-          errorMessage.toLowerCase().includes('verification')) {
+      if (typeof errorMessage === 'string' && 
+          (errorMessage.toLowerCase().includes('verify') || 
+           errorMessage.toLowerCase().includes('verification'))) {
         toast({
           title: 'Email Not Verified',
           description: 'Please verify your email address before logging in. Check your inbox for the verification link.',
@@ -146,6 +152,11 @@ export function LoginForm() {
         )}
       </div>
 
+      <Captcha 
+        onSuccess={(token) => setCaptchaToken(token)}
+        onError={(error) => console.error('CAPTCHA error:', error)}
+      />
+
       <div className="flex items-center justify-end">
         <Link
           href="/forgot-password"
@@ -155,7 +166,7 @@ export function LoginForm() {
         </Link>
       </div>
 
-      <Button type="submit" className="w-full" disabled={isLoading}>
+      <Button type="submit" className="w-full" disabled={isLoading || !captchaToken}>
         {isLoading ? 'Signing in...' : 'Sign In'}
       </Button>
     </form>

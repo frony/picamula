@@ -1,5 +1,6 @@
 import {
   IsEmail,
+  IsOptional,
   IsString,
   Matches,
   MaxLength,
@@ -42,4 +43,12 @@ export class SignUpDto extends PartialType(CreateUserDto) {
   })
   @IsString()
   lastName: string;
+
+  @ApiProperty({
+    example: 'base64EncodedCaptchaPayload',
+    description: 'ALTCHA captcha verification token',
+  })
+  @IsOptional()
+  @IsString()
+  captchaToken?: string;
 }

@@ -37,25 +37,25 @@ export default function Nav() {
                         <span className="hidden md:inline">Checklist</span>
                     </Link>
                     <div className="flex items-center space-x-2 md:space-x-4">
-                    <button 
-                        onClick={handleLogout}
-                        className={cn('flex items-center text-sm font-medium transition-colors text-popover hover:underline hover:decoration-2')}
-                    >
-                        <LogOut className="w-4 h-4 md:mr-2" />
-                        <span className="hidden md:inline">Logout</span>
-                    </button>
+                        <button
+                            onClick={handleLogout}
+                            className={cn('flex items-center text-sm font-medium transition-colors text-popover hover:underline hover:decoration-2')}
+                        >
+                            <LogOut className="w-4 h-4 md:mr-2" />
+                            <span className="hidden md:inline">Logout</span>
+                        </button>
                     </div>
                 </>
             )}
-            { mounted && !isAuthenticated && pathname === '/signup' && 
-                (<Link href="/login" className={'flex items-center text-sm font-medium transition-colors hover:text-primary'}>
+            {mounted && !isAuthenticated && pathname === '/signup' &&
+                (<Link href="/login" className={'flex items-center text-sm font-medium transition-colors text-popover hover:underline hover:decoration-2'}>
                     <LogIn className="w-4 h-4 md:mr-2" />
                     <span className="hidden md:inline">Login</span>
                 </Link>)
             }
-            
-            { mounted && !isAuthenticated && pathname === '/login' && 
-                (<Link href="/signup" className={'flex items-center text-sm font-medium transition-colors hover:text-primary'}>
+
+            {mounted && !isAuthenticated && pathname === '/login' &&
+                (<Link href="/signup" className={'flex items-center text-sm font-medium transition-colors text-popover hover:underline hover:decoration-2'}>
                     <UserPlus className="w-4 h-4 md:mr-2" />
                     <span className="hidden md:inline">Signup</span>
                 </Link>)
