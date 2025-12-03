@@ -3,3 +3,4 @@ export * from './auth-actions';
 export * from './users-actions';
 export * from './trips-actions';
 export * from './notes-actions';
+export * from './password-actions';

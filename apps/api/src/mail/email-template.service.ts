@@ -73,7 +73,7 @@ export class EmailTemplateService {
     this.logger.log(`EmailTemplateService: Preparing password reset email for ${email}`);
     this.logger.log(`EmailTemplateService: Reset URL: ${resetUrl}`);
     
-    const subject = 'Band & Fan: Reset your password';
+    const subject = 'JuntaTribo: Reset your password';
     const message = `Copy this URL and paste it in your browser: ${resetUrl}`;
     const htmlMessage = `<p>Copy this URL and paste it in your browser: ${resetUrl}</p>
 <p>Or <a href="${resetUrl}">click on this link to reset your password</a></p>`;

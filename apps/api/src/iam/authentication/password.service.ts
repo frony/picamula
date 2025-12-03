@@ -219,7 +219,7 @@ export class PasswordService {
       // =============================
       // Send confirmation to the FE
       // =============================
-      return { name, email };
+      return { firstName, lastName, email };
     } catch (error) {
       this.logger.log(error);
       return new BadRequestException(error.message);
