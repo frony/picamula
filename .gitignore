@@ -116,3 +116,5 @@ Thumbs.db
 
 # Uploaded files (local development)
 uploads/
+
+nginx*.conf
