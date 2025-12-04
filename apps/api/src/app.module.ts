@@ -1,14 +1,23 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CacheModule } from '@nestjs/cache-manager';
 import { MailerModule } from '@nestjs-modules/mailer';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_FILTER } from '@nestjs/core';
 import { IamModule } from './iam/iam.module';
 import { UsersModule } from './users/users.module';
 import { TripsModule } from './trips/trips.module';
 import { TodosModule } from './todos/todos.module';
 import { NotesModule } from './notes/notes.module';
 import { S3Module } from './s3/s3.module';
+import { LoggingMiddleware } from './common/middleware/logging.middleware';
+import { IpBackoffMiddleware } from './common/middleware/ip-backoff.middleware';
+import { BackoffStrikeMiddleware } from './common/middleware/backoff-strike.middleware';
+import { BackoffStrikeService } from './common/services/backoff-strike.service';
+import { BackoffStrikeController } from './common/controllers/backoff-strike.controller';
+import { ThrottlerExceptionFilter } from './common/filters/throttler-exception.filter';
+import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
 import * as redisStore from 'cache-manager-redis-store';
 import * as path from 'path';
 
@@ -101,6 +110,51 @@ import * as path from 'path';
         };
       },
     }),
+    // Throttler Module - Multi-tier rate limiting
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        const shortTtl = parseInt(config.get('THROTTLER_SHORT_TTL', '1000'), 10);
+        const shortLimit = parseInt(config.get('THROTTLER_SHORT_LIMIT', '5'), 10);
+        const mediumTtl = parseInt(config.get('THROTTLER_MEDIUM_TTL', '10000'), 10);
+        const mediumLimit = parseInt(config.get('THROTTLER_MEDIUM_LIMIT', '30'), 10);
+        const longTtl = parseInt(config.get('THROTTLER_LONG_TTL', '60000'), 10);
+        const longLimit = parseInt(config.get('THROTTLER_LONG_LIMIT', '150'), 10);
+
+        // Validate configuration
+        if (shortTtl <= 0 || shortLimit <= 0) {
+          throw new Error('Invalid THROTTLER_SHORT configuration');
+        }
+        if (mediumTtl <= 0 || mediumLimit <= 0) {
+          throw new Error('Invalid THROTTLER_MEDIUM configuration');
+        }
+        if (longTtl <= 0 || longLimit <= 0) {
+          throw new Error('Invalid THROTTLER_LONG configuration');
+        }
+
+        return [
+          {
+            name: 'short',
+            ttl: shortTtl,
+            limit: shortLimit,
+            storage: new ThrottlerStorageRedisService(),
+          },
+          {
+            name: 'medium',
+            ttl: mediumTtl,
+            limit: mediumLimit,
+            storage: new ThrottlerStorageRedisService(),
+          },
+          {
+            name: 'long',
+            ttl: longTtl,
+            limit: longLimit,
+            storage: new ThrottlerStorageRedisService(),
+          },
+        ];
+      },
+    }),
     IamModule,
     UsersModule,
     TripsModule,
@@ -108,7 +162,25 @@ import * as path from 'path';
     NotesModule,
     S3Module,
   ],
-  controllers: [],
-  providers: [],
+  controllers: [BackoffStrikeController],
+  providers: [
+    BackoffStrikeService,
+    {
+      provide: APP_FILTER,
+      useClass: ThrottlerExceptionFilter,
+    },
+  ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    // Apply middleware in order:
+    // 1. Logging - logs all requests
+    consumer.apply(LoggingMiddleware).forRoutes('*');
+    
+    // 2. BackoffStrike - checks if IP has too many violations
+    consumer.apply(BackoffStrikeMiddleware).forRoutes('*');
+    
+    // 3. IP Backoff - enforces basic rate limiting
+    consumer.apply(IpBackoffMiddleware).forRoutes('*');
+  }
+}
