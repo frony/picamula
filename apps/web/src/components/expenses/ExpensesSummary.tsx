@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { TripExpensesSummary } from '@junta-tribo/shared';
+import { TripExpensesSummary } from '@/types/trip-expense.types';
 
 interface ExpensesSummaryProps {
   summary: TripExpensesSummary;

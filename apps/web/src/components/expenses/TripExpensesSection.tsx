@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DollarSign, Plus } from 'lucide-react';
 import { usersApi } from '@/lib/api';
-import type { TripExpense, User } from '@junta-tribo/shared';
+import type { User } from '@junta-tribo/shared';
+import type { TripExpense } from '@/types/trip-expense.types';
 
 interface TripExpensesSectionProps {
   tripId: number;

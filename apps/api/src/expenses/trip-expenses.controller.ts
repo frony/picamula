@@ -28,7 +28,7 @@ import { ActiveUserData } from '../iam/interfaces/active-user-data.interface';
 @Auth(AuthType.Bearer)
 @Controller('trip-expenses')
 export class TripExpensesController {
-  constructor(private readonly tripExpensesService: TripExpensesService) {}
+  constructor(private readonly tripExpensesService: TripExpensesService) { }
 
   @Post()
   @ApiOperation({ summary: 'Create a new trip expense' })

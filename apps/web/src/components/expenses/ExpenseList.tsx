@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { TripExpense } from '@junta-tribo/shared';
+import { TripExpense } from '@/types/trip-expense.types';
 
 interface ExpenseListProps {
   expenses: TripExpense[];

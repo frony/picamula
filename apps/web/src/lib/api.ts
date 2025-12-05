@@ -13,11 +13,13 @@ import type {
   Note,
   CreateNoteDto,
   UpdateNoteDto,
+} from '@junta-tribo/shared'
+import type {
   TripExpense,
   CreateTripExpenseDto,
   UpdateTripExpenseDto,
   TripExpensesSummary,
-} from '@junta-tribo/shared'
+} from '@/types/trip-expense.types'
 
 // Function to get auth store for token updates
 const getAuthStore = () => {

@@ -8,7 +8,7 @@ import {
   IsInt,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { ExpenseType } from '@junta-tribo/shared';
+import { ExpenseType } from '../entities/trip-expense.entity';
 
 export class CreateTripExpenseDto {
   @ApiProperty({ description: 'Date of the expense' })
