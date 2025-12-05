@@ -7,8 +7,8 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { Trip } from '../../../trips/entities/trip.entity';
-import { User } from '../../../users/entities/user.entity';
+import { Trip } from '../../trips/entities/trip.entity';
+import { User } from '../../users/entities/user.entity';
 import { ExpenseType } from '@junta-tribo/shared';
 
 

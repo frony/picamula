@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { TripExpenses } from './entities/trip-expense.entity/trip-expense.entity';
+import { TripExpenses } from './entities/trip-expense.entity';
 import { CreateTripExpenseDto } from './dto/create-trip-expense.dto';
 import { UpdateTripExpenseDto } from './dto/update-trip-expense.dto';
 import { Trip } from '../trips/entities/trip.entity';
