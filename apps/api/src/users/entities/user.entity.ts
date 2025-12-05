@@ -9,6 +9,7 @@ import { ApiKey } from '../api-keys/entities/api-key.entity';
 import { Trip } from '../../trips/entities/trip.entity';
 import { Note } from '../../notes/entities/note.entity';
 import { TodoItem } from '../../todos/todo-item.entity';
+import { TripExpenses } from '../../expenses/entities/trip-expense.entity/trip-expense.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { BaseEntity } from '../../common/entities/base.entity';
 
@@ -134,6 +135,13 @@ export class User extends BaseEntity {
   })
   @OneToMany(() => TodoItem, (todoItem) => todoItem.user)
   todoItems: TodoItem[];
+
+  @ApiProperty({
+    example: '[TripExpenses]',
+    description: 'List of trip expenses paid by the user',
+  })
+  @OneToMany(() => TripExpenses, (expense) => expense.paidBy)
+  expensesPaid: TripExpenses[];
 }
 
 @Entity()
@@ -200,11 +208,4 @@ export class UserRedux {
     description: 'List of API keys for the user',
   })
   apiKeys?: ApiKey[];
-
-  // @ApiProperty({
-  //   example: '[Video]',
-  //   description: 'List of videos uploaded by the user',
-  // })
-  // @Field(() => [Video], { nullable: true })
-  // videos?: Video[];
 }

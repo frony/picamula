@@ -12,6 +12,7 @@ import {
 import { User } from '../../users/entities/user.entity';
 import { Note } from '../../notes/entities/note.entity';
 import { MediaFile } from './media-file.entity';
+import { TripExpenses } from '../../expenses/entities/trip-expense.entity/trip-expense.entity';
 
 export enum TripStatus {
   PLANNING = 'planning',
@@ -72,6 +73,12 @@ export class Trip {
     eager: false 
   })
   mediaFiles: MediaFile[];
+
+  @OneToMany(() => TripExpenses, (expense) => expense.trip, {
+    cascade: true,
+    eager: false
+  })
+  expenses: TripExpenses[];
 
   @ManyToOne(() => User, (user) => user.trips, { eager: true })
   @JoinColumn({ name: 'ownerId' })
