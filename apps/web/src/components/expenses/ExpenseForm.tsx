@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { User } from '@junta-tribo/shared';
 import {
   ExpenseType,
   CreateTripExpenseDto,
   TripExpense,
-  User,
-} from '@junta-tribo/shared';
+} from '@/types/trip-expense.types';
 
 type ExpenseFormCallback = (data: CreateTripExpenseDto) => Promise<void>;
 type CancelCallback = () => void;
@@ -151,7 +151,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
           required
         >
           {availableUsers.map((user) => {
-            const displayName = user.firstName || user.lastName 
+            const displayName = user.firstName || user.lastName
               ? `${user.firstName} ${user.lastName}`.trim()
               : user.email || `User ${user.id}`;
             return (

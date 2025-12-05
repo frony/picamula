@@ -5,7 +5,7 @@ import type {
   CreateTripExpenseDto,
   UpdateTripExpenseDto,
   TripExpensesSummary,
-} from '@junta-tribo/shared';
+} from '@/types/trip-expense.types';
 
 export const useTripExpenses = (tripId: number) => {
   const [expenses, setExpenses] = useState<TripExpense[]>([]);
@@ -15,7 +15,7 @@ export const useTripExpenses = (tripId: number) => {
 
   const fetchExpenses = useCallback(async () => {
     if (!tripId) return;
-    
+
     setLoading(true);
     setError(null);
     try {
@@ -31,7 +31,7 @@ export const useTripExpenses = (tripId: number) => {
 
   const fetchSummary = useCallback(async () => {
     if (!tripId) return;
-    
+
     try {
       const response = await tripExpensesApi.getSummary(tripId);
       const data = response.data;

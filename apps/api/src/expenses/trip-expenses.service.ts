@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { TripExpenses } from './entities/trip-expense.entity/trip-expense.entity';
+import { TripExpenses } from './entities/trip-expense.entity';
 import { CreateTripExpenseDto } from './dto/create-trip-expense.dto';
 import { UpdateTripExpenseDto } from './dto/update-trip-expense.dto';
 import { Trip } from '../trips/entities/trip.entity';
@@ -21,7 +21,7 @@ export class TripExpensesService {
     private readonly tripRepository: Repository<Trip>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-  ) {}
+  ) { }
 
   async create(
     createTripExpenseDto: CreateTripExpenseDto,
@@ -64,7 +64,13 @@ export class TripExpensesService {
       paidById,
     });
 
-    return await this.tripExpenseRepository.save(expense);
+    const savedExpense = await this.tripExpenseRepository.save(expense);
+
+    // Reload with paidBy relation
+    return await this.tripExpenseRepository.findOne({
+      where: { id: savedExpense.id },
+      relations: ['paidBy'],
+    });
   }
 
   async findAll(tripId: number, currentUserId: number): Promise<TripExpenses[]> {
@@ -127,8 +133,16 @@ export class TripExpensesService {
       );
     }
 
-    Object.assign(expense, updateTripExpenseDto);
-    return await this.tripExpenseRepository.save(expense);
+    // Use TypeORM's update method to directly update the database
+    await this.tripExpenseRepository.update(id, updateTripExpenseDto);
+
+    // Reload with updated paidBy relation
+    const reloaded = await this.tripExpenseRepository.findOne({
+      where: { id },
+      relations: ['paidBy'],
+    });
+
+    return reloaded;
   }
 
   async remove(id: number, currentUserId: number): Promise<void> {

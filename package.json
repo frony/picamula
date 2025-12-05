@@ -4,7 +4,8 @@
   "private": true,
   "description": "Multi-user travel app monorepo",
   "scripts": {
-    "build": "npm run build:api && npm run build:web",
+    "build": "npm run build:shared && npm run build:api && npm run build:web",
+    "build:shared": "cd packages/shared && npm run build",
     "build:api": "cd apps/api && nest build",
     "build:web": "cd apps/web && next build",
     "build:prod": "npm run clean && npm run build",
@@ -24,7 +25,7 @@
     "type-check": "npm run type-check:api && npm run type-check:web",
     "type-check:api": "cd apps/api && tsc --noEmit",
     "type-check:web": "cd apps/web && tsc --noEmit",
-    "clean": "rm -rf apps/api/dist apps/web/.next",
+    "clean": "rm -rf packages/shared/dist apps/api/dist apps/web/.next",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "deploy": "npm run build:prod && pm2 restart all",

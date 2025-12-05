@@ -6,7 +6,7 @@ import { Trip } from './src/trips/entities/trip.entity';
 import { Note } from './src/notes/entities/note.entity';
 import { MediaFile } from './src/trips/entities/media-file.entity';
 import { TodoItem } from './src/todos/todo-item.entity';
-import { TripExpenses } from './src/expenses/entities/trip-expense.entity/trip-expense.entity';
+import { TripExpenses } from './src/expenses/entities/trip-expense.entity';
 import { ApiKey } from './src/users/api-keys/entities/api-key.entity';
 import { RefreshToken } from './src/iam/authentication/entities/refresh-token.entity';
 import { EmailVerificationToken } from './src/users/entities/email-verification-token.entity';

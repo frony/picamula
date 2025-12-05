@@ -9,7 +9,7 @@ import { ApiKey } from '../api-keys/entities/api-key.entity';
 import { Trip } from '../../trips/entities/trip.entity';
 import { Note } from '../../notes/entities/note.entity';
 import { TodoItem } from '../../todos/todo-item.entity';
-import { TripExpenses } from '../../expenses/entities/trip-expense.entity/trip-expense.entity';
+import { TripExpenses } from '../../expenses/entities/trip-expense.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { BaseEntity } from '../../common/entities/base.entity';
 

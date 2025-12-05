@@ -12,7 +12,7 @@ import {
 import { User } from '../../users/entities/user.entity';
 import { Note } from '../../notes/entities/note.entity';
 import { MediaFile } from './media-file.entity';
-import { TripExpenses } from '../../expenses/entities/trip-expense.entity/trip-expense.entity';
+import { TripExpenses } from '../../expenses/entities/trip-expense.entity';
 
 export enum TripStatus {
   PLANNING = 'planning',

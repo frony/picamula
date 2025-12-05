@@ -7,9 +7,19 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { Trip } from '../../../trips/entities/trip.entity';
-import { User } from '../../../users/entities/user.entity';
-import { ExpenseType } from '@junta-tribo/shared';
+import { Trip } from '../../trips/entities/trip.entity';
+import { User } from '../../users/entities/user.entity';
+
+export enum ExpenseType {
+  FLIGHT = 'flight',
+  LODGING = 'lodging',
+  TRANSPORTATION = 'transportation',
+  MEAL = 'meal',
+  SNACK = 'snack',
+  GROCERIES = 'groceries',
+  ENTERTAINMENT = 'entertainment',
+  OTHER = 'other',
+}
 
 
 @Entity('trip_expenses')
