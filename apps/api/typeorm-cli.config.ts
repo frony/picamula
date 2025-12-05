@@ -6,6 +6,7 @@ import { Trip } from './src/trips/entities/trip.entity';
 import { Note } from './src/notes/entities/note.entity';
 import { MediaFile } from './src/trips/entities/media-file.entity';
 import { TodoItem } from './src/todos/todo-item.entity';
+import { TripExpenses } from './src/expenses/entities/trip-expense.entity/trip-expense.entity';
 import { ApiKey } from './src/users/api-keys/entities/api-key.entity';
 import { RefreshToken } from './src/iam/authentication/entities/refresh-token.entity';
 import { EmailVerificationToken } from './src/users/entities/email-verification-token.entity';
@@ -18,6 +19,7 @@ import { CreateEmailVerificationTokenTable1759360000000 } from './src/migrations
 import { AddIsVerifiedToUser1759360100000 } from './src/migrations/1759360100000-AddIsVerifiedToUser';
 import { CreateTripTodoItemsTable1733000000000 } from './src/migrations/1733000000000-CreateTripTodoItemsTable';
 import { UpdateTripTodoItemsToUserRelation1733100000000 } from './src/migrations/1733100000000-UpdateTripTodoItemsToUserRelation';
+import { CreateTripExpensesTable1733200000000 } from './src/migrations/1733200000000-CreateTripExpensesTable';
 
 // Load .env from project root
 config({ path: join(__dirname, '../../../.env') });
@@ -35,6 +37,7 @@ export default new DataSource({
     Note,
     MediaFile,
     TodoItem,
+    TripExpenses,
     ApiKey,
     RefreshToken,
     EmailVerificationToken,
@@ -46,6 +49,7 @@ export default new DataSource({
     CreateMediaFileTable1732406400000,
     CreateTripTodoItemsTable1733000000000,
     UpdateTripTodoItemsToUserRelation1733100000000,
+    CreateTripExpensesTable1733200000000,
     UserReplaceNameByFirstAndLastName1759355264384,
     CreateEmailVerificationTokenTable1759360000000,
     AddIsVerifiedToUser1759360100000,

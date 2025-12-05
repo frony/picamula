@@ -8,7 +8,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User, UserRedux } from './entities/user.entity';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { EmailVerificationToken } from './entities/email-verification-token.entity';
 import { MailService } from '../mail/mail.service';
 import * as crypto from 'crypto';
@@ -229,5 +229,27 @@ export class UsersService {
     await this.emailVerificationTokenRepository.update(verificationToken.id, { used: true });
 
     return { message: 'Email verified successfully' };
+  }
+
+  async findByEmails(emails: string[]): Promise<User[]> {
+    console.log('=== findByEmails service ===');
+    console.log('Input emails:', emails);
+    if (!emails || emails.length === 0) {
+      console.log('No emails provided, returning empty array');
+      return [];
+    }
+    try {
+      const result = await this.userRepository.find({
+        where: {
+          email: In(emails),
+        },
+        select: ['id', 'firstName', 'lastName', 'email'],
+      });
+      console.log('Query result:', result);
+      return result;
+    } catch (error) {
+      console.error('Error in findByEmails:', error);
+      throw error;
+    }
   }
 }

@@ -12,7 +12,11 @@ import type {
   UpdateUserDto,
   Note,
   CreateNoteDto,
-  UpdateNoteDto
+  UpdateNoteDto,
+  TripExpense,
+  CreateTripExpenseDto,
+  UpdateTripExpenseDto,
+  TripExpensesSummary,
 } from '@junta-tribo/shared'
 
 // Function to get auth store for token updates
@@ -145,6 +149,11 @@ export const usersApi = {
   
   delete: (id: number): Promise<AxiosResponse<void>> =>
     api.delete(`${API_ENDPOINTS.USERS.BASE}/${id}`),
+  
+  getByEmails: (emails: string[]): Promise<AxiosResponse<User[]>> =>
+    api.get(`${API_ENDPOINTS.USERS.BASE}/by-emails`, {
+      params: { emails: emails.join(',') }
+    }),
 }
 
 // Trips API
@@ -230,6 +239,27 @@ export const todosApi = {
   
   resetAll: (): Promise<AxiosResponse<TodoItem[]>> =>
     api.post('/todos/reset'),
+}
+
+// Trip Expenses API
+export const tripExpensesApi = {
+  getAll: (tripId: number): Promise<AxiosResponse<TripExpense[]>> =>
+    api.get('/trip-expenses', { params: { tripId } }),
+  
+  getById: (id: number): Promise<AxiosResponse<TripExpense>> =>
+    api.get(`/trip-expenses/${id}`),
+  
+  getSummary: (tripId: number): Promise<AxiosResponse<TripExpensesSummary>> =>
+    api.get('/trip-expenses/summary', { params: { tripId } }),
+  
+  create: (data: CreateTripExpenseDto): Promise<AxiosResponse<TripExpense>> =>
+    api.post('/trip-expenses', data),
+  
+  update: (id: number, data: UpdateTripExpenseDto): Promise<AxiosResponse<TripExpense>> =>
+    api.patch(`/trip-expenses/${id}`, data),
+  
+  delete: (id: number): Promise<AxiosResponse<void>> =>
+    api.delete(`/trip-expenses/${id}`),
 }
 
 export default api

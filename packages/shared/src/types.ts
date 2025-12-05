@@ -110,6 +110,55 @@ export interface CreateMediaFileDto {
   thumbnailKey?: string;
 }
 
+// Trip Expense types
+export enum ExpenseType {
+  FLIGHT = 'flight',
+  LODGING = 'lodging',
+  TRANSPORTATION = 'transportation',
+  MEAL = 'meal',
+  SNACK = 'snack',
+  GROCERIES = 'groceries',
+  ENTERTAINMENT = 'entertainment',
+  OTHER = 'other',
+}
+
+export interface TripExpense {
+  id: number;
+  date: string; // API returns ISO string
+  type: ExpenseType;
+  memo?: string;
+  amount: number;
+  tripId: number;
+  paidById: number;
+  paidBy?: User;
+  trip?: Trip;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateTripExpenseDto {
+  date: string; // ISO date string (YYYY-MM-DD)
+  type: ExpenseType;
+  memo?: string;
+  amount: number;
+  tripId: number;
+  paidById: number;
+}
+
+export interface UpdateTripExpenseDto {
+  date?: string; // ISO date string (YYYY-MM-DD)
+  type?: ExpenseType;
+  memo?: string;
+  amount?: number;
+  paidById?: number;
+}
+
+export interface TripExpensesSummary {
+  totalExpenses: number;
+  expensesByType: Record<string, number>;
+  expensesByPayer: Array<{ userId: number; userName: string; total: number }>;
+}
+
 // Trip types
 export enum TripStatus {
   PLANNING = 'planning',

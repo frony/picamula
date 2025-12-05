@@ -10,6 +10,7 @@ import {
   HttpStatus,
   BadRequestException,
   NotFoundException,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -88,6 +89,38 @@ export class UsersController {
       throw new NotFoundException(`User not found`);
     }
     return currentUser;
+  }
+
+  @ApiOperation({
+    summary: 'Get users by their email addresses',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns array of users matching the provided emails',
+    type: [UserRedux],
+  })
+  @Get('by-emails')
+  async getUsersByEmails(
+    @Query('emails') emails: string,
+  ): Promise<UserRedux[]> {
+    try {
+      if (!emails) {
+        return [];
+      }
+      const emailArray = emails.split(',').map((email) => email.trim());
+      console.log('Fetching users by emails:', emailArray);
+      const users = await this.usersService.findByEmails(emailArray);
+      console.log('Found users:', users);
+      const result = users.map(user => {
+        const { id, firstName, lastName, email, phone, role, permissions, isTfaEnabled } = user;
+        return { id, firstName, lastName, email, phone, role, permissions, isTfaEnabled };
+      });
+      console.log('Returning users:', result);
+      return result;
+    } catch (error) {
+      console.error('Error in getUsersByEmails:', error);
+      throw new BadRequestException(error.message);
+    }
   }
 
   @ApiResponse({

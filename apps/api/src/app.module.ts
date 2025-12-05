@@ -10,6 +10,7 @@ import { UsersModule } from './users/users.module';
 import { TripsModule } from './trips/trips.module';
 import { TodosModule } from './todos/todos.module';
 import { NotesModule } from './notes/notes.module';
+import { TripExpensesModule } from './expenses/trip-expenses.module';
 import { S3Module } from './s3/s3.module';
 import { LoggingMiddleware } from './common/middleware/logging.middleware';
 import { IpBackoffMiddleware } from './common/middleware/ip-backoff.middleware';
@@ -160,6 +161,7 @@ import * as path from 'path';
     TripsModule,
     TodosModule,
     NotesModule,
+    TripExpensesModule,
     S3Module,
   ],
   controllers: [BackoffStrikeController],

@@ -12,6 +12,7 @@ import { formatDateRange, calculateTripDuration, checkAuthStatus } from '@/lib/u
 import { TRIP_STATUS_LABELS } from '@junta-tribo/shared'
 import type { Trip } from '@junta-tribo/shared'
 import { MediaGallery } from '@/components/trips/media-gallery'
+import { TripExpensesSection } from '@/components/expenses/TripExpensesSection'
 import { 
   ArrowLeft, 
   MapPin, 
@@ -428,6 +429,16 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
             />
           </div>
         )}
+
+        {/* Expenses Section */}
+        <div className="mb-8">
+          <TripExpensesSection
+            tripId={trip.id}
+            tripOwner={trip.owner}
+            participants={trip.participants || []}
+            isOwner={isOwner}
+          />
+        </div>
 
         {/* Notes Section */}
         <Card>
