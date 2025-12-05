@@ -6,7 +6,7 @@
   "scripts": {
     "build": "npm run build:shared && npm run build:api && npm run build:web",
     "build:shared": "cd packages/shared && npm run build",
-    "build:api": "cd apps/api && nest build",
+    "build:api": "cd apps/api && nest build && tsc --project tsconfig.build-cli.json",
     "build:web": "cd apps/web && next build",
     "build:prod": "npm run clean && npm run build",
     "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
@@ -39,6 +39,7 @@
     "pm2:list": "pm2 list",
     "migration:generate": "cd apps/api && typeorm-ts-node-commonjs migration:generate",
     "migration:run": "cd apps/api && typeorm-ts-node-commonjs migration:run",
+    "migration:run:prod": "cd apps/api && npx typeorm migration:run -d dist/typeorm-cli.config",
     "migration:revert": "cd apps/api && typeorm-ts-node-commonjs migration:revert"
   },
   "dependencies": {
