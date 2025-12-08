@@ -19,6 +19,7 @@ import { MailService } from '../../mail/mail.service';
 import { EmailTemplateService } from '../../mail/email-template.service';
 import { ConfigService } from '@nestjs/config';
 import { AuthenticationService } from './authentication.service';
+import { verifyAltchaPayload } from '../../common/utils/altcha';
 
 @Injectable()
 export class PasswordService {
@@ -37,7 +38,19 @@ export class PasswordService {
   ) {}
 
   async sendResetToken(tokenIdentifier: TokenIdentifier) {
-    const { email } = tokenIdentifier;
+    const { email, captchaToken } = tokenIdentifier;
+
+    // ============================
+    // Validate CAPTCHA token
+    // ============================
+    if (!captchaToken) {
+      throw new BadRequestException('CAPTCHA verification is required');
+    }
+
+    const isValidCaptcha = await verifyAltchaPayload(captchaToken);
+    if (!isValidCaptcha) {
+      throw new BadRequestException('Invalid CAPTCHA verification');
+    }
 
     // ============================
     // Validate that email exists

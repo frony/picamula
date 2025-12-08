@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { sendPasswordToken } from '@/actions/password-actions'
 import { Mail, CheckCircle2 } from 'lucide-react'
+import { Captcha } from './captcha'
 
 interface ForgotPasswordFormData {
   email: string
@@ -17,6 +18,7 @@ export function ForgotPasswordForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
 
   const {
     register,
@@ -26,11 +28,16 @@ export function ForgotPasswordForm() {
   } = useForm<ForgotPasswordFormData>()
 
   const onSubmit = async (data: ForgotPasswordFormData) => {
+    if (!captchaToken) {
+      setError('Please complete the verification challenge')
+      return
+    }
+
     setIsLoading(true)
     setError(null)
 
     try {
-      const result = await sendPasswordToken(data.email)
+      const result = await sendPasswordToken(data.email, captchaToken)
       
       if (result.success) {
         setEmailSent(true)
@@ -42,6 +49,16 @@ export function ForgotPasswordForm() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleCaptchaSuccess = (token: string) => {
+    setCaptchaToken(token)
+    setError(null)
+  }
+
+  const handleCaptchaError = (error: string) => {
+    setCaptchaToken(null)
+    setError(error)
   }
 
   if (emailSent) {
@@ -60,6 +77,7 @@ export function ForgotPasswordForm() {
           <Button
             onClick={() => {
               setEmailSent(false)
+              setCaptchaToken(null)
               reset()
             }}
             variant="outline"
@@ -109,7 +127,16 @@ export function ForgotPasswordForm() {
             )}
           </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Captcha 
+            onSuccess={handleCaptchaSuccess}
+            onError={handleCaptchaError}
+          />
+
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={isLoading || !captchaToken}
+          >
             {isLoading ? 'Sending...' : 'Send reset link'}
           </Button>
         </form>

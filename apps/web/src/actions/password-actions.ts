@@ -12,9 +12,12 @@ export interface ResetPasswordResult {
   error?: string
 }
 
-export async function sendPasswordToken(email: string): Promise<SendPasswordTokenResult> {
+export async function sendPasswordToken(email: string, captchaToken: string): Promise<SendPasswordTokenResult> {
   try {
-    await apiClient.post('/authentication/sendResetToken', { email }, { skipAuth: true })
+    await apiClient.post('/authentication/sendResetToken', { 
+      email,
+      captchaToken 
+    }, { skipAuth: true })
     return { success: true }
   } catch (error: any) {
     console.error('Send password token error:', error)

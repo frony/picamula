@@ -27,6 +27,7 @@ import { OtpAuthenticationService } from './otp-authentication.service';
 import { UsersService } from '../../users/users.service';
 import { AuthTokens } from './entities/auth-tokens.entity';
 import { CreateUserDto } from '../../users/dto/create-user.dto';
+import { verifyAltchaPayload } from '../../common/utils/altcha';
 type CreatedUser = Partial<
   Pick<CreateUserDto & User, 'firstName' | 'lastName' | 'email' | 'permissions'>
 >;
@@ -53,6 +54,18 @@ export class AuthenticationService {
    * @param signUpDto
    */
   async signUp(signUpDto: SignUpDto): Promise<CreatedUser> {
+    // ============================
+    // Validate CAPTCHA token
+    // ============================
+    if (!signUpDto.captchaToken) {
+      throw new BadRequestException('CAPTCHA verification is required');
+    }
+
+    const isValidCaptcha = await verifyAltchaPayload(signUpDto.captchaToken);
+    if (!isValidCaptcha) {
+      throw new BadRequestException('Invalid CAPTCHA verification');
+    }
+
     try {
       const password = await this.hashingService.hash(signUpDto.password);
       const { email, phone, firstName, lastName } = signUpDto;
@@ -98,6 +111,18 @@ export class AuthenticationService {
    * @param userAgent
    */
   async signIn(signInDto: SignInDto, ipAddress?: string, userAgent?: string): Promise<{ accessToken: string; refreshToken: string }> {
+    // ============================
+    // Validate CAPTCHA token
+    // ============================
+    if (!signInDto.captchaToken) {
+      throw new BadRequestException('CAPTCHA verification is required');
+    }
+
+    const isValidCaptcha = await verifyAltchaPayload(signInDto.captchaToken);
+    if (!isValidCaptcha) {
+      throw new BadRequestException('Invalid CAPTCHA verification');
+    }
+
     const user = await this.usersRepository.findOneBy({
       email: signInDto.email,
     });
