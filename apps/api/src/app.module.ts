@@ -138,6 +138,10 @@ import * as path from 'path';
         const mediumLimit = parseInt(config.get('THROTTLER_MEDIUM_LIMIT', '30'), 10);
         const longTtl = parseInt(config.get('THROTTLER_LONG_TTL', '60000'), 10);
         const longLimit = parseInt(config.get('THROTTLER_LONG_LIMIT', '150'), 10);
+        
+        const redisHost = config.get('REDIS_HOST', 'localhost');
+        const redisPort = parseInt(config.get('REDIS_PORT', '6379'), 10);
+        const redisPassword = config.get('REDIS_PASSWORD');
 
         // Validate configuration
         if (shortTtl <= 0 || shortLimit <= 0) {
@@ -155,19 +159,19 @@ import * as path from 'path';
             name: 'short',
             ttl: shortTtl,
             limit: shortLimit,
-            storage: new ThrottlerStorageRedisService(),
+            storage: new ThrottlerStorageRedisService({ host: redisHost, port: redisPort, password: redisPassword }),
           },
           {
             name: 'medium',
             ttl: mediumTtl,
             limit: mediumLimit,
-            storage: new ThrottlerStorageRedisService(),
+            storage: new ThrottlerStorageRedisService({ host: redisHost, port: redisPort, password: redisPassword }),
           },
           {
             name: 'long',
             ttl: longTtl,
             limit: longLimit,
-            storage: new ThrottlerStorageRedisService(),
+            storage: new ThrottlerStorageRedisService({ host: redisHost, port: redisPort, password: redisPassword }),
           },
         ];
       },
