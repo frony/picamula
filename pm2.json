@@ -5,7 +5,6 @@
       "cwd": "./",
       "script": "npm",
       "args": "run start:prod:api",
-      "env_file": "/root/juntatribo/picamula/.env",
       "env": {
         "NODE_ENV": "production",
         "PORT": "8001"
@@ -23,7 +22,6 @@
       "cwd": "./",
       "script": "npm",
       "args": "run start:prod:web",
-      "env_file": "/root/juntatribo/picamula/.env",
       "env": {
         "NODE_ENV": "production",
         "PORT": "3003",

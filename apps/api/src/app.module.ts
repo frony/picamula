@@ -69,14 +69,18 @@ import * as path from 'path';
       },
       inject: [ConfigService],
     }),
-    CacheModule.register({
+    CacheModule.registerAsync({
       isGlobal: true,
-      ttl: 60 * 60 * 2 * 1000, // 2 hours
-      max: 10, // maximum number of items in cache
-      store: redisStore,
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT, 10) || 6379,
-      password: process.env.REDIS_PASSWORD,
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        ttl: 60 * 60 * 2 * 1000, // 2 hours
+        max: 10, // maximum number of items in cache
+        store: redisStore,
+        host: configService.get('REDIS_HOST', 'localhost'),
+        port: parseInt(configService.get('REDIS_PORT', '6379'), 10),
+        password: configService.get('REDIS_PASSWORD'),
+      }),
+      inject: [ConfigService],
     }),
     MailerModule.forRootAsync({
       imports: [ConfigModule],
