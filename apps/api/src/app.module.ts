@@ -72,15 +72,27 @@ import * as path from 'path';
     CacheModule.registerAsync({
       isGlobal: true,
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        ttl: 60 * 60 * 2 * 1000, // 2 hours
-        max: 10, // maximum number of items in cache
-        store: redisStore,
-        host: configService.get('REDIS_HOST', 'localhost'),
-        port: parseInt(configService.get('REDIS_PORT', '6379'), 10),
-        password: configService.get('REDIS_PASSWORD'),
-      }),
       inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const redisHost = configService.get('REDIS_HOST', 'localhost');
+        const redisPort = configService.get('REDIS_PORT', '6379');
+        const redisPassword = configService.get('REDIS_PASSWORD');
+        
+        console.log('=== REDIS CONNECTION DEBUG ===');
+        console.log('ConfigService REDIS_HOST:', redisHost);
+        console.log('ConfigService REDIS_PORT:', redisPort);
+        console.log('Parsed REDIS_PORT:', parseInt(redisPort, 10));
+        console.log('==============================');
+        
+        return {
+          ttl: 60 * 60 * 2 * 1000, // 2 hours
+          max: 10, // maximum number of items in cache
+          store: redisStore,
+          host: redisHost,
+          port: parseInt(redisPort, 10),
+          password: redisPassword,
+        };
+      },
     }),
     MailerModule.forRootAsync({
       imports: [ConfigModule],
