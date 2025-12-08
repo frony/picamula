@@ -28,6 +28,7 @@ import { AuthTokensDto } from './dto/auth-tokens.dto';
 import { PasswordService } from './password.service';
 import { TokenIdentifier } from '../interfaces/token-identifier';
 import { LogoutDto } from './dto/logout.dto';
+import { getAltchaHmacKey } from '../../common/utils/altcha';
 
 @Auth(AuthType.None)
 @ApiTags('authentication')
@@ -200,6 +201,21 @@ export class AuthenticationController {
       await this.authService.logout(activeUser.sub);
       return { message: 'Logged out successfully' };
     }
+  }
+
+  /**
+   * Get ALTCHA HMAC key for challenge generation
+   * Public endpoint - needed for frontend to generate challenges
+   */
+  @ApiOperation({ summary: 'Get ALTCHA HMAC key' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns the ALTCHA HMAC key',
+  })
+  @HttpCode(HttpStatus.OK)
+  @Get('altcha/key')
+  getAltchaKey(): { key: string } {
+    return { key: getAltchaHmacKey() };
   }
 
   /**

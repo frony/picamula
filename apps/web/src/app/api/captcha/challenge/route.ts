@@ -1,14 +1,42 @@
 import { NextResponse } from 'next/server';
-import { getAltchaHmacKey } from '@/lib/altcha';
 import crypto from 'crypto';
 
 // Mark this route as dynamic (not static)
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+// Cache the HMAC key for 5 minutes to avoid excessive API calls
+let cachedKey: string | null = null;
+let cacheExpiry: number = 0;
+
+async function getAltchaHmacKey(): Promise<string> {
+  const now = Date.now();
+  
+  // Return cached key if still valid
+  if (cachedKey && now < cacheExpiry) {
+    return cachedKey;
+  }
+  
+  // Fetch key from backend
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+  const response = await fetch(`${apiUrl}/authentication/altcha/key`);
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch ALTCHA key from backend');
+  }
+  
+  const data = await response.json();
+  
+  // Cache for 5 minutes
+  cachedKey = data.key;
+  cacheExpiry = now + (5 * 60 * 1000);
+  
+  return data.key;
+}
+
 export async function GET() {
   try {
-    const hmacKey = getAltchaHmacKey();
+    const hmacKey = await getAltchaHmacKey();
 
     // Create challenge manually (altcha's createChallenge logic)
     const algorithm = 'SHA-256';
