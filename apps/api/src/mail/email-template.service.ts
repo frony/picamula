@@ -73,10 +73,22 @@ export class EmailTemplateService {
     this.logger.log(`EmailTemplateService: Preparing password reset email for ${email}`);
     this.logger.log(`EmailTemplateService: Reset URL: ${resetUrl}`);
     
-    const subject = 'JuntaTribo: Reset your password';
-    const message = `Copy this URL and paste it in your browser: ${resetUrl}`;
-    const htmlMessage = `<p>Copy this URL and paste it in your browser: ${resetUrl}</p>
-<p>Or <a href="${resetUrl}">click on this link to reset your password</a></p>`;
+    const subject = 'Reset your password - JuntaTribo';
+    const message = `Please reset your password by clicking the following link: ${resetUrl}`;
+    const htmlMessage = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #4F46E5;">Reset Your Password</h2>
+        <p>We received a request to reset your password for your JuntaTribo account.</p>
+        <p>Click the button below to reset your password:</p>
+        <p style="margin: 30px 0;">
+          <a href="${resetUrl}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Reset Password</a>
+        </p>
+        <p style="color: #6B7280; font-size: 14px;">Or copy and paste this link into your browser:</p>
+        <p style="color: #6B7280; font-size: 14px; word-break: break-all;">${resetUrl}</p>
+        <p style="color: #6B7280; font-size: 12px; margin-top: 30px;">This link will expire soon for security reasons.</p>
+        <p style="color: #6B7280; font-size: 12px;">If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.</p>
+      </div>
+    `;
 
     await this.sendEmail({
       emailTo: email,
