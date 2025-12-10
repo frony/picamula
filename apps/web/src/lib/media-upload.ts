@@ -1,7 +1,6 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg'
 import { fetchFile, toBlobURL } from '@ffmpeg/util'
 import api from './api'
-import { LOCAL_STORAGE_KEYS } from '@junta-tribo/shared'
 
 
 // FFmpeg core version - can be configured via environment variable
@@ -69,36 +68,36 @@ export async function compressImage(
 ): Promise<File> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
-    
+
     reader.onload = (e) => {
       const img = new Image()
-      
+
       img.onload = () => {
         let width = img.width
         let height = img.height
-        
+
         // Calculate aspect ratio and scale down to fit within max dimensions
         // This handles both width and height constraints properly
         const widthRatio = maxWidth / width
         const heightRatio = maxHeight / height
         const scale = Math.min(widthRatio, heightRatio, 1) // Don't upscale if smaller
-        
+
         width = Math.round(width * scale)
         height = Math.round(height * scale)
-        
+
         // Create canvas and draw resized image
         const canvas = document.createElement('canvas')
         canvas.width = width
         canvas.height = height
-        
+
         const ctx = canvas.getContext('2d')
         if (!ctx) {
           reject(new Error('Failed to get canvas context'))
           return
         }
-        
+
         ctx.drawImage(img, 0, 0, width, height)
-        
+
         // Convert to blob as JPEG
         canvas.toBlob(
           (blob) => {
@@ -106,14 +105,14 @@ export async function compressImage(
               reject(new Error('Failed to create blob'))
               return
             }
-            
+
             // Create new file from blob with .jpg extension
             const originalName = file.name.replace(/\.[^/.]+$/, '.jpg')
             const compressedFile = new File([blob], originalName, {
               type: 'image/jpeg',
               lastModified: Date.now(),
             })
-            
+
             console.log(`Image compressed: ${(file.size / 1024 / 1024).toFixed(2)}MB -> ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`)
             resolve(compressedFile)
           },
@@ -121,11 +120,11 @@ export async function compressImage(
           quality
         )
       }
-      
+
       img.onerror = () => reject(new Error('Failed to load image'))
       img.src = e.target?.result as string
     }
-    
+
     reader.onerror = () => reject(new Error('Failed to read file'))
     reader.readAsDataURL(file)
   })
@@ -147,7 +146,7 @@ export async function compressVideo(
 ): Promise<File> {
   try {
     const ffmpeg = await loadFFmpeg()
-    
+
     // Set up progress callback
     if (onProgress) {
       ffmpeg.on('progress', ({ progress }) => {
@@ -157,10 +156,10 @@ export async function compressVideo(
 
     const inputName = 'input.mp4'
     const outputName = 'output.mp4'
-    
+
     // Write input file to FFmpeg virtual file system
     await ffmpeg.writeFile(inputName, await fetchFile(file))
-    
+
     // Compress video with H.264 codec
     // -c:v libx264: Use H.264 video codec
     // -preset fast: Encoding speed preset
@@ -179,14 +178,14 @@ export async function compressVideo(
       '-movflags', '+faststart', // Enable streaming
       outputName
     ])
-    
+
     // Read compressed file
     const data = await ffmpeg.readFile(outputName)
-    
+
     // Clean up
     await ffmpeg.deleteFile(inputName)
     await ffmpeg.deleteFile(outputName)
-    
+
     // Convert FileData (Uint8Array) to proper Blob format
     // FileData from ffmpeg is already a Uint8Array, just ensure it's the right type
     const uint8Array = data instanceof Uint8Array ? data : new Uint8Array(data as any)
@@ -195,9 +194,9 @@ export async function compressVideo(
       type: 'video/mp4',
       lastModified: Date.now(),
     })
-    
+
     console.log(`Video compressed: ${(file.size / 1024 / 1024).toFixed(2)}MB -> ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`)
-    
+
     return compressedFile
   } catch (error) {
     console.error('Video compression failed:', error)
@@ -216,7 +215,7 @@ async function prepareFileForUpload(
 ): Promise<File> {
   const isImage = file.type.startsWith('image/')
   const isVideo = file.type.startsWith('video/')
-  
+
   if (isImage) {
     // Compress images on the frontend
     try {
@@ -229,7 +228,7 @@ async function prepareFileForUpload(
       return file
     }
   }
-  
+
   if (isVideo) {
     // Compress videos on the frontend
     try {
@@ -239,7 +238,7 @@ async function prepareFileForUpload(
       return file
     }
   }
-  
+
   // For non-media files, return as-is
   return file
 }
@@ -254,7 +253,7 @@ export async function uploadMediaFile(
 ): Promise<UploadedMediaFile> {
   // Prepare file (compress if image/video)
   const preparedFile = await prepareFileForUpload(file, onCompressionProgress)
-  
+
   const formData = new FormData()
   formData.append('file', preparedFile)
 
@@ -281,12 +280,12 @@ export async function uploadMediaFiles(
   onFileCompressionProgress?: (fileName: string, progress: number) => void
 ): Promise<UploadedMediaFile[]> {
   const uploadedFiles: UploadedMediaFile[] = []
-  
+
   for (let i = 0; i < files.length; i++) {
     const file = files[i]
     try {
       const result = await uploadMediaFile(
-        tripId, 
+        tripId,
         file,
         (progress) => onFileCompressionProgress?.(file.name, progress)
       )

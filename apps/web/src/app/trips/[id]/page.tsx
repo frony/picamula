@@ -7,17 +7,17 @@ import { tripsApi, notesApi } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from '@/hooks/use-toast'
 import { formatDateRange, calculateTripDuration, checkAuthStatus } from '@/lib/utils'
 import { TRIP_STATUS_LABELS } from '@junta-tribo/shared'
 import type { Trip } from '@junta-tribo/shared'
 import { MediaGallery } from '@/components/trips/media-gallery'
 import { TripExpensesSection } from '@/components/expenses/TripExpensesSection'
-import { 
-  ArrowLeft, 
-  MapPin, 
-  Calendar, 
-  Users, 
+import {
+  ArrowLeft,
+  MapPin,
+  Calendar,
+  Users,
   DollarSign,
   Clock,
   User,
@@ -36,33 +36,18 @@ interface TripDetailsPageProps {
 export default function TripDetailsPage({ params }: TripDetailsPageProps) {
   const router = useRouter()
   const { user, isLoading: authLoading } = useAuth()
-  const { toast } = useToast()
   const [trip, setTrip] = React.useState<Trip | null>(null)
-  const [loading, setLoading] = React.useState(true)
-  const [mounted, setMounted] = React.useState(false)
+  const [initialLoading, setInitialLoading] = React.useState(true)
 
-  // Ensure component is mounted on client side
-  React.useEffect(() => {
-    setMounted(true)
-  }, [])
+  // Track if we've already fetched to prevent duplicate fetches
+  const hasFetchedRef = React.useRef(false)
 
-  // Handle client-side navigation only
-  React.useEffect(() => {
-    if (mounted && !authLoading && !user) {
-      router.push('/')
-    }
-  }, [user, authLoading, router, mounted])
-
-  // Fetch trip data
-  React.useEffect(() => {
-    if (mounted && user && params.id) {
-      fetchTrip()
-    }
-  }, [mounted, user, params.id])
-
-  const fetchTrip = async () => {
+  const fetchTrip = React.useCallback(async (isInitialFetch = false) => {
     try {
-      setLoading(true)
+      // Only show loading spinner on initial fetch
+      if (isInitialFetch) {
+        setInitialLoading(true)
+      }
       const response = await tripsApi.getById(params.id)
       setTrip(response.data)
     } catch (error: any) {
@@ -74,9 +59,32 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
       // If trip not found or error, redirect back to dashboard
       router.push('/')
     } finally {
-      setLoading(false)
+      if (isInitialFetch) {
+        setInitialLoading(false)
+      }
     }
-  }
+  }, [params.id, router])
+
+  // Handle authentication and data fetching - only run once
+  React.useEffect(() => {
+    // Wait for auth to resolve
+    if (authLoading) return
+
+    // Redirect if not authenticated
+    if (!user) {
+      router.push('/login')
+      return
+    }
+
+    // Only fetch once per mount
+    if (hasFetchedRef.current) return
+    hasFetchedRef.current = true
+
+    // Fetch trip data if authenticated
+    fetchTrip(true)
+  }, [user, authLoading, router, fetchTrip])
+
+
 
   const handleAddNote = async () => {
     try {
@@ -90,7 +98,7 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
         router.push('/login')
         return
       }
-      
+
       router.push(`/trips/${params.id}/notes/add`)
     } catch (error) {
       toast({
@@ -113,7 +121,7 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
         router.push('/login')
         return
       }
-      
+
       router.push(`/trips/${params.id}/notes/${noteId}/edit`)
     } catch (error) {
       toast({
@@ -131,14 +139,14 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
 
     try {
       await notesApi.delete(params.id, noteId)
-      
+
       toast({
         title: 'Success',
         description: 'Note deleted successfully',
       })
-      
-      // Refresh trip data to update notes list
-      await fetchTrip()
+
+      // Refresh trip data to update notes list (don't show loading spinner)
+      await fetchTrip(false)
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -148,8 +156,8 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
     }
   }
 
-  // Show loading until mounted and auth is resolved
-  if (!mounted || authLoading || loading) {
+  // Show loading while auth is resolving or initial data is loading
+  if (authLoading || initialLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -157,14 +165,12 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
     )
   }
 
-  // Show loading while redirecting
+  // Don't render anything if not authenticated (will redirect)
   if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    )
+    return null
   }
+
+
 
   if (!trip) {
     return (
@@ -214,9 +220,9 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
         <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => router.push('/')}
                 className="flex items-center"
               >
@@ -236,8 +242,8 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
                     <Share2 className="w-4 h-4 mr-2" />
                     Share
                   </Button> */}
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => router.push(`/trips/${params.id}/edit`)}
                   >
@@ -309,8 +315,8 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
                 <div>
                   <p className="text-sm text-gray-600">Status</p>
                   <p className="font-medium">
-                    {startDate > today ? 'Upcoming' : 
-                     endDate < today ? 'Past' : 'Ongoing'}
+                    {startDate > today ? 'Upcoming' :
+                      endDate < today ? 'Past' : 'Ongoing'}
                   </p>
                 </div>
               </div>
@@ -421,11 +427,11 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
         {/* Media Gallery Section */}
         {trip.mediaFiles && trip.mediaFiles.length > 0 && (
           <div className="mb-8">
-            <MediaGallery 
-              mediaFiles={trip.mediaFiles} 
+            <MediaGallery
+              mediaFiles={trip.mediaFiles}
               tripId={trip.id}
               isOwner={isOwner}
-              onMediaDeleted={fetchTrip}
+              onMediaDeleted={() => fetchTrip(false)}
             />
           </div>
         )}
@@ -453,7 +459,7 @@ export default function TripDetailsPage({ params }: TripDetailsPageProps) {
                   Keep track of important information and memories
                 </CardDescription>
               </div>
-              <Button 
+              <Button
                 onClick={handleAddNote}
                 size="sm"
               >

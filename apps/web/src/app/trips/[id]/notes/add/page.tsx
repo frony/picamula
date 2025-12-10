@@ -25,23 +25,28 @@ export default function AddNotePage({ params }: AddNotePageProps) {
   const [content, setContent] = React.useState('')
   const [selectedDate, setSelectedDate] = React.useState(new Date().toISOString().split('T')[0])
   const [isSubmitting, setIsSubmitting] = React.useState(false)
-  const [mounted, setMounted] = React.useState(false)
 
-  // Ensure component is mounted on client side
-  React.useEffect(() => {
-    setMounted(true)
-  }, [])
+  // Track if we've already checked auth to prevent duplicate redirects
+  const hasCheckedAuthRef = React.useRef(false)
 
-  // Handle client-side navigation only
+  // Handle authentication - only check once
   React.useEffect(() => {
-    if (mounted && !authLoading && !user) {
-      router.push('/')
+    // Wait for auth to resolve
+    if (authLoading) return
+
+    // Only check once
+    if (hasCheckedAuthRef.current) return
+    hasCheckedAuthRef.current = true
+
+    // Redirect if not authenticated
+    if (!user) {
+      router.push('/login')
     }
-  }, [user, authLoading, router, mounted])
+  }, [user, authLoading, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!content.trim()) {
       toast({
         title: 'Error',
@@ -52,20 +57,20 @@ export default function AddNotePage({ params }: AddNotePageProps) {
     }
 
     setIsSubmitting(true)
-    
+
     try {
       const noteData = {
         content: content.trim(),
         date: selectedDate + 'T12:00:00.000Z'
       }
-      
+
       await notesApi.create(params.id, noteData)
-      
+
       toast({
         title: 'Success',
         description: 'Note added successfully',
       })
-      
+
       // Redirect back to trip page
       router.push(`/trips/${params.id}`)
     } catch (error: any) {
@@ -83,8 +88,8 @@ export default function AddNotePage({ params }: AddNotePageProps) {
     router.push(`/trips/${params.id}`)
   }
 
-  // Show loading until mounted and auth is resolved
-  if (!mounted || authLoading) {
+  // Show loading while auth is resolving
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -92,13 +97,9 @@ export default function AddNotePage({ params }: AddNotePageProps) {
     )
   }
 
-  // Show loading while redirecting
+  // Don't render anything if not authenticated (will redirect)
   if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    )
+    return null
   }
 
   const formatDisplayDate = (dateString: string) => {
@@ -116,9 +117,9 @@ export default function AddNotePage({ params }: AddNotePageProps) {
         <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => router.push(`/trips/${params.id}`)}
                 className="flex items-center"
               >

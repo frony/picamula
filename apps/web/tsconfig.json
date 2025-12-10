@@ -21,7 +21,7 @@
     "baseUrl": ".",
     "typeRoots": ["./node_modules/@types", "../../node_modules/@types"],
     "paths": {
-      "@/*": ["./src/*"],
+      "@/*": ["./src/*", "./*"],
       "@/components/*": ["./src/components/*"],
       "@/lib/*": ["./src/lib/*"],
       "@/hooks/*": ["./src/hooks/*"],

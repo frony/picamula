@@ -1,12 +1,11 @@
 'use server';
 
 import { apiClient } from '@/lib/api-client';
-import { LOCAL_STORAGE_KEYS } from '@junta-tribo/shared';
-import type { 
-  AuthResponse, 
+import type {
+  AuthResponse,
   SignUpResponse,
-  LoginDto, 
-  RegisterDto, 
+  LoginDto,
+  RegisterDto,
   User
 } from '@junta-tribo/shared';
 
@@ -20,10 +19,10 @@ interface ActionResult {
 export async function loginUser(data: LoginDto): Promise<ActionResult> {
   try {
     const response = await apiClient.post<AuthResponse>('/authentication/sign-in', data, { skipAuth: true });
-    
+
     // Note: Token storage will be handled by the client component after this action returns
     // The client will call apiClient.setTokens(accessToken, refreshToken) 
-    
+
     return {
       success: true,
       data: response
@@ -41,7 +40,7 @@ export async function loginUser(data: LoginDto): Promise<ActionResult> {
 export async function registerUser(data: RegisterDto): Promise<ActionResult> {
   try {
     const response = await apiClient.post<SignUpResponse>('/authentication/sign-up', data, { skipAuth: true });
-    
+
     return {
       success: true,
       data: response
@@ -59,10 +58,10 @@ export async function registerUser(data: RegisterDto): Promise<ActionResult> {
 export async function logoutUser(): Promise<ActionResult> {
   try {
     await apiClient.post('/authentication/logout');
-    
+
     // Note: Token clearing will be handled by the client component
     // The client will call apiClient.clearTokens()
-    
+
     return {
       success: true
     };
@@ -79,7 +78,7 @@ export async function logoutUser(): Promise<ActionResult> {
 export async function getCurrentUser(): Promise<ActionResult> {
   try {
     const user = await apiClient.get<User>('/users/me');
-    
+
     return {
       success: true,
       data: user

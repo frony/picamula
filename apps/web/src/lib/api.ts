@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from 'axios'
-import { API_ENDPOINTS, LOCAL_STORAGE_KEYS } from '@junta-tribo/shared'
+import { API_ENDPOINTS } from '@junta-tribo/shared'
 import type { 
   AuthResponse, 
   SignUpResponse,
@@ -20,20 +20,7 @@ import type {
   UpdateTripExpenseDto,
   TripExpensesSummary,
 } from '@/types/trip-expense.types'
-
-// Function to get auth store for token updates
-const getAuthStore = () => {
-  if (typeof window !== 'undefined') {
-    try {
-      // Dynamic import to avoid SSR issues
-      const { useAuth } = require('@/hooks/use-auth')
-      return useAuth.getState()
-    } catch (error) {
-      return null
-    }
-  }
-  return null
-}
+import { getSession } from 'next-auth/react'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
 
@@ -46,65 +33,27 @@ const api = axios.create({
   withCredentials: true, // Include cookies in requests
 })
 
-// Request interceptor to add auth token
-api.interceptors.request.use((config) => {
+// Request interceptor to add auth token from NextAuth session
+api.interceptors.request.use(async (config) => {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN)
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+    const session = await getSession()
+    if (session?.accessToken) {
+      config.headers.Authorization = `Bearer ${session.accessToken}`
     }
   }
   return config
 })
 
-// Response interceptor for error handling and token refresh
+// Response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config
-
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true
-
-      try {
-        // Try to refresh the token
-        const refreshResponse = await authApi.refreshToken()
-        const { accessToken, refreshToken: newRefreshToken } = refreshResponse.data
-
-        // Update the stored tokens
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, accessToken)
-          if (newRefreshToken) {
-            localStorage.setItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken)
-          }
-          // Update the auth store if available
-          const authStore = getAuthStore()
-          if (authStore?.updateToken) {
-            authStore.updateToken(accessToken)
-          }
-        }
-
-        // Update the authorization header for the original request
-        originalRequest.headers.Authorization = `Bearer ${accessToken}`
-
-        // Retry the original request
-        return api(originalRequest)
-      } catch (refreshError) {
-        // Refresh failed, clear auth data and redirect to login
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN)
-          localStorage.removeItem(LOCAL_STORAGE_KEYS.USER_DATA)
-          // Clear auth store if available
-          const authStore = getAuthStore()
-          if (authStore?.logout) {
-            authStore.logout()
-          }
-          window.location.href = '/'
-        }
-        return Promise.reject(refreshError)
+    // If we get a 401, the session has expired - NextAuth will handle this
+    if (error.response?.status === 401) {
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login'
       }
     }
-
     return Promise.reject(error)
   }
 )
@@ -122,11 +71,6 @@ export const authApi = {
   
   me: (): Promise<AxiosResponse<User>> =>
     api.get(API_ENDPOINTS.AUTH.ME),
-  
-  refreshToken: (): Promise<AxiosResponse<AuthResponse>> => {
-    const refreshToken = localStorage.getItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN)
-    return api.post(API_ENDPOINTS.AUTH.REFRESH, { refreshToken })
-  },
   
   verifyEmail: (token: string): Promise<AxiosResponse<{ message: string }>> =>
     api.post(API_ENDPOINTS.AUTH.VERIFY_EMAIL, { token }),
