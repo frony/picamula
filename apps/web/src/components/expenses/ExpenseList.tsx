@@ -28,7 +28,14 @@ export const ExpenseList: React.FC<ExpenseListProps> = ({
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    // Parse date parts to avoid timezone issues
+    // The date string comes in as "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM:SS..."
+    const datePart = dateString.split('T')[0];
+    const [year, month, day] = datePart.split('-').map(Number);
+    // Create date in local timezone (month is 0-indexed in JS Date)
+    const date = new Date(year, month - 1, day);
+
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
