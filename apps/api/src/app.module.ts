@@ -26,7 +26,11 @@ import * as path from 'path';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '../../.env',  // Root .env (two levels up from apps/api)
+      envFilePath: [
+        '.env',           // Project root (when running from root with PM2)
+        '../../.env',     // From apps/api (development)
+        '../../../.env',  // From apps/api/dist (compiled)
+      ],
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -37,14 +41,14 @@ import * as path from 'path';
         const dbUsername = configService.get('DB_USERNAME', 'postgres');
         const dbPassword = configService.get('DB_PASSWORD', 'password');
         const dbName = configService.get('DB_NAME', 'junta_tribo');
-        
+
         console.log('=== DATABASE CONNECTION DEBUG ===');
         console.log('Host:', dbHost);
         console.log('Port:', dbPort, 'Type:', typeof dbPort);
         console.log('Username:', dbUsername);
         console.log('Database:', dbName);
         console.log('================================');
-        
+
         return {
           type: 'postgres',
           host: dbHost,
@@ -77,13 +81,13 @@ import * as path from 'path';
         const redisHost = configService.get('REDIS_HOST', 'localhost');
         const redisPort = configService.get('REDIS_PORT', '6379');
         const redisPassword = configService.get('REDIS_PASSWORD');
-        
+
         console.log('=== REDIS CONNECTION DEBUG ===');
         console.log('ConfigService REDIS_HOST:', redisHost);
         console.log('ConfigService REDIS_PORT:', redisPort);
         console.log('Parsed REDIS_PORT:', parseInt(redisPort, 10));
         console.log('==============================');
-        
+
         return {
           ttl: 60 * 60 * 2 * 1000, // 2 hours
           max: 10, // maximum number of items in cache
@@ -107,13 +111,13 @@ import * as path from 'path';
         console.log('Direct process.env.EMAIL_PORT:', process.env.EMAIL_PORT);
         console.log('Direct process.env.EMAIL_USERNAME:', process.env.EMAIL_USERNAME);
         console.log('==================================');
-        
+
         // Use direct env vars as fallback
         const emailHost = configService.get<string>('EMAIL_HOST') || process.env.EMAIL_HOST;
         const emailPort = configService.get<string>('EMAIL_PORT') || process.env.EMAIL_PORT;
         const emailUsername = configService.get<string>('EMAIL_USERNAME') || process.env.EMAIL_USERNAME;
         const emailPassword = configService.get<string>('EMAIL_PASSWORD') || process.env.EMAIL_PASSWORD;
-        
+
         return {
           transport: {
             host: emailHost,
@@ -138,7 +142,7 @@ import * as path from 'path';
         const mediumLimit = parseInt(config.get('THROTTLER_MEDIUM_LIMIT', '30'), 10);
         const longTtl = parseInt(config.get('THROTTLER_LONG_TTL', '60000'), 10);
         const longLimit = parseInt(config.get('THROTTLER_LONG_LIMIT', '150'), 10);
-        
+
         const redisHost = config.get('REDIS_HOST', 'localhost');
         const redisPort = parseInt(config.get('REDIS_PORT', '6379'), 10);
         const redisPassword = config.get('REDIS_PASSWORD');
@@ -198,10 +202,10 @@ export class AppModule implements NestModule {
     // Apply middleware in order:
     // 1. Logging - logs all requests
     consumer.apply(LoggingMiddleware).forRoutes('*');
-    
+
     // 2. BackoffStrike - checks if IP has too many violations
     consumer.apply(BackoffStrikeMiddleware).forRoutes('*');
-    
+
     // 3. IP Backoff - enforces basic rate limiting
     consumer.apply(IpBackoffMiddleware).forRoutes('*');
   }
