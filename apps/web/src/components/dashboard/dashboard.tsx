@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useAuth } from '@/hooks/use-auth'
+import { useState, useEffect, useRef } from 'react'
 import { tripsApi } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,17 +8,23 @@ import { useToast } from '@/hooks/use-toast'
 import { formatDateRange, calculateTripDuration } from '@/lib/utils'
 import { TRIP_STATUS_LABELS } from '@junta-tribo/shared'
 import type { Trip } from '@junta-tribo/shared'
-import { Plus, MapPin, Calendar, Users, LogOut } from 'lucide-react'
+import { Plus, MapPin, Calendar, Users } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 export function Dashboard() {
-  const { user, logout } = useAuth()
   const { toast } = useToast()
   const router = useRouter()
   const [trips, setTrips] = useState<Trip[]>([])
   const [loading, setLoading] = useState(true)
+  
+  // Track if we've already fetched to prevent duplicate fetches
+  const hasFetchedRef = useRef(false)
 
   useEffect(() => {
+    // Only fetch once per mount - auth is handled by parent (Home page)
+    if (hasFetchedRef.current) return
+    hasFetchedRef.current = true
+
     fetchTrips()
   }, [])
 
@@ -137,9 +142,9 @@ export function Dashboard() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
             {trips.map((trip) => (
-              <Card 
-                key={trip.id} 
-                className="hover:shadow-lg transition-shadow cursor-pointer" 
+              <Card
+                key={trip.id}
+                className="hover:shadow-lg transition-shadow cursor-pointer"
                 onClick={() => handleTripClick(trip.slug)}
               >
                 <CardHeader className="pb-3">
@@ -151,13 +156,12 @@ export function Dashboard() {
                         <span className="truncate">{trip.destination}</span>
                       </CardDescription>
                     </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
-                      trip.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                      trip.status === 'planning' ? 'bg-blue-100 text-blue-800' :
-                      trip.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
-                      trip.status === 'completed' ? 'bg-gray-100 text-gray-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${trip.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                        trip.status === 'planning' ? 'bg-blue-100 text-blue-800' :
+                          trip.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
+                            trip.status === 'completed' ? 'bg-gray-100 text-gray-800' :
+                              'bg-red-100 text-red-800'
+                      }`}>
                       {TRIP_STATUS_LABELS[trip.status]}
                     </span>
                   </div>
@@ -172,7 +176,7 @@ export function Dashboard() {
                       <Users className="w-4 h-4 mr-2 flex-shrink-0" />
                       <span className="truncate">
                         {calculateTripDuration(trip.startDate, trip.endDate)} days
-                        {trip.participants && trip.participants.length > 0 && 
+                        {trip.participants && trip.participants.length > 0 &&
                           ` • ${trip.participants.length + 1} travelers`
                         }
                       </span>

@@ -11,7 +11,8 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { TripStatus, TRIP_STATUS_LABELS, LOCAL_STORAGE_KEYS } from '@junta-tribo/shared'
+import { TripStatus, TRIP_STATUS_LABELS } from '@junta-tribo/shared'
+import { getSession } from 'next-auth/react'
 import type { UpdateTripDto, Trip } from '@junta-tribo/shared'
 import { X, Plus, Upload, Image as ImageIcon, Video, Loader2 } from 'lucide-react'
 import { useMediaUpload } from '@/hooks/use-media-upload'
@@ -122,11 +123,12 @@ export function EditTripForm({ trip, onSuccess, onCancel }: EditTripFormProps) {
       const completedMedia = mediaFiles.filter(f => f.status === 'completed')
       if (completedMedia.length > 0) {
         try {
-          // Get auth token
-          const token = localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN)
-          if (!token) {
+          // Get auth token from NextAuth session
+          const session = await getSession()
+          if (!session?.accessToken) {
             throw new Error('Not authenticated')
           }
+          const token = session.accessToken
 
           toast({
             title: 'Uploading media...',

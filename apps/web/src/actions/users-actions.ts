@@ -13,7 +13,7 @@ interface ActionResult {
 export async function fetchUsers(): Promise<ActionResult> {
   try {
     const users = await apiClient.get<User[]>('/users');
-    
+
     return {
       success: true,
       data: users
@@ -31,7 +31,7 @@ export async function fetchUsers(): Promise<ActionResult> {
 export async function fetchUserById(id: number): Promise<ActionResult> {
   try {
     const user = await apiClient.get<User>(`/users/${id}`);
-    
+
     return {
       success: true,
       data: user
@@ -49,28 +49,28 @@ export async function fetchUserById(id: number): Promise<ActionResult> {
 export async function updateUserProfile(data: UpdateUserDto): Promise<ActionResult> {
   try {
     const user = await apiClient.patch<User>('/users/me', data);
-    
+
     return {
       success: true,
       data: user
     };
   } catch (error: any) {
     console.error('Error updating user profile:', error);
-    
+
     if (error.status === 403) {
       return {
         success: false,
         error: 'You do not have permission to update this profile'
       };
     }
-    
+
     if (error.status === 401) {
       return {
         success: false,
         error: 'Authentication required. Please log in again.'
       };
     }
-    
+
     return {
       success: false,
       error: error.message || 'Failed to update profile'
@@ -82,28 +82,28 @@ export async function updateUserProfile(data: UpdateUserDto): Promise<ActionResu
 export async function updateUser(id: number, data: UpdateUserDto): Promise<ActionResult> {
   try {
     const user = await apiClient.patch<User>(`/users/${id}`, data);
-    
+
     return {
       success: true,
       data: user
     };
   } catch (error: any) {
     console.error('Error updating user:', error);
-    
+
     if (error.status === 403) {
       return {
         success: false,
         error: 'You do not have permission to update users. Admin access required.'
       };
     }
-    
+
     if (error.status === 401) {
       return {
         success: false,
         error: 'Authentication required. Please log in again.'
       };
     }
-    
+
     return {
       success: false,
       error: error.message || 'Failed to update user'
@@ -115,27 +115,23 @@ export async function updateUser(id: number, data: UpdateUserDto): Promise<Actio
 export async function deactivateUserProfile(): Promise<ActionResult> {
   try {
     const user = await apiClient.delete<User>('/users/me');
-    
-    // Clear stored auth data
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('user_data');
-    }
-    
+
+    // Note: Session cleanup is handled by NextAuth on the client side
+
     return {
       success: true,
       data: user
     };
   } catch (error: any) {
     console.error('Error deactivating user profile:', error);
-    
+
     if (error.status === 401) {
       return {
         success: false,
         error: 'Authentication required. Please log in again.'
       };
     }
-    
+
     return {
       success: false,
       error: error.message || 'Failed to deactivate profile'
@@ -147,27 +143,27 @@ export async function deactivateUserProfile(): Promise<ActionResult> {
 export async function deleteUser(id: number): Promise<ActionResult> {
   try {
     await apiClient.delete(`/users/${id}`);
-    
+
     return {
       success: true
     };
   } catch (error: any) {
     console.error('Error deleting user:', error);
-    
+
     if (error.status === 403) {
       return {
         success: false,
         error: 'You do not have permission to delete users. Admin access required.'
       };
     }
-    
+
     if (error.status === 401) {
       return {
         success: false,
         error: 'Authentication required. Please log in again.'
       };
     }
-    
+
     return {
       success: false,
       error: error.message || 'Failed to delete user'

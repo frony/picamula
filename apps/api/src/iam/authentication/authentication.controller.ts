@@ -77,7 +77,7 @@ export class AuthenticationController {
     @Body() signInDto: SignInDto, 
     @Res({ passthrough: true }) res: Response,
     @Req() req: Request,
-  ): Promise<{ accessToken: string }> {
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     this.logger.log(`sign-in: ${JSON.stringify(signInDto)}`);
     
     const ipAddress = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
@@ -91,7 +91,8 @@ export class AuthenticationController {
       path: '/',
       maxAge: 1000 * parseInt(process.env.JWT_REFRESH_TOKEN_TTL ?? '300', 10),
     });
-    return { accessToken };
+    // Return both tokens - cookie for traditional clients, body for NextAuth
+    return { accessToken, refreshToken };
   }
 
   /**
@@ -112,7 +113,7 @@ export class AuthenticationController {
     @Res({ passthrough: true }) res: Response, 
     @Body() refreshTokenDto: RefreshTokenDto,
     @Req() req: Request,
-  ): Promise<{ accessToken: string }> {
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     // The refreshTokenDto is not needed anymore, but keep for compatibility
     const ipAddress = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
     const userAgent = req.get('User-Agent');
@@ -125,7 +126,8 @@ export class AuthenticationController {
       path: '/',
       maxAge: 1000 * parseInt(process.env.JWT_REFRESH_TOKEN_TTL ?? '300', 10),
     });
-    return { accessToken };
+    // Return both tokens - cookie for traditional clients, body for NextAuth
+    return { accessToken, refreshToken };
   }
 
   /**

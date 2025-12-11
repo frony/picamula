@@ -29,40 +29,29 @@ export default function EditNotePage({ params }: EditNotePageProps) {
   const [selectedDate, setSelectedDate] = React.useState('')
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [loading, setLoading] = React.useState(true)
-  const [mounted, setMounted] = React.useState(false)
+  const toastRef = React.useRef(toast)
 
-  // Ensure component is mounted on client side
+  // Track if we've already fetched to prevent duplicate fetches
+  const hasFetchedRef = React.useRef(false)
+
+  // Keep toast ref updated
   React.useEffect(() => {
-    setMounted(true)
-  }, [])
+    toastRef.current = toast
+  }, [toast])
 
-  // Handle client-side navigation only
-  React.useEffect(() => {
-    if (mounted && !authLoading && !user) {
-      router.push('/')
-    }
-  }, [user, authLoading, router, mounted])
-
-  // Fetch note data and populate form
-  React.useEffect(() => {
-    if (mounted && user && params.id && params.noteId) {
-      fetchNote()
-    }
-  }, [mounted, user, params.id, params.noteId])
-
-  const fetchNote = async () => {
+  const fetchNote = React.useCallback(async () => {
     try {
       setLoading(true)
       const response = await notesApi.getById(params.id, params.noteId)
       const noteData = response.data
       setNote(noteData)
-      
+
       // Populate form with existing note data
       setContent(noteData.content)
       // Extract just the date part without timezone conversion
       setSelectedDate(String(noteData.date).split('T')[0])
     } catch (error: any) {
-      toast({
+      toastRef.current({
         title: 'Error',
         description: error.response?.data?.message || 'Failed to fetch note details',
         variant: 'destructive',
@@ -71,11 +60,30 @@ export default function EditNotePage({ params }: EditNotePageProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [params.id, params.noteId, router])
+
+  // Handle authentication and data fetching - only run once
+  React.useEffect(() => {
+    // Wait for auth to resolve
+    if (authLoading) return
+
+    // Redirect if not authenticated
+    if (!user) {
+      router.push('/login')
+      return
+    }
+
+    // Only fetch once per mount
+    if (hasFetchedRef.current) return
+    hasFetchedRef.current = true
+
+    // Fetch note data if authenticated
+    fetchNote()
+  }, [user, authLoading, router, fetchNote])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!content.trim()) {
       toast({
         title: 'Error',
@@ -86,20 +94,20 @@ export default function EditNotePage({ params }: EditNotePageProps) {
     }
 
     setIsSubmitting(true)
-    
+
     try {
       const noteData = {
         content: content.trim(),
         date: selectedDate + 'T12:00:00.000Z'
       }
-      
+
       await notesApi.update(params.id, params.noteId, noteData)
-      
+
       toast({
         title: 'Success',
         description: 'Note updated successfully',
       })
-      
+
       // Redirect back to trip page
       router.push(`/trips/${params.id}`)
     } catch (error: any) {
@@ -126,8 +134,8 @@ export default function EditNotePage({ params }: EditNotePageProps) {
     })
   }
 
-  // Show loading until mounted and auth is resolved
-  if (!mounted || authLoading || loading) {
+  // Show loading while auth is resolving or data is loading
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -135,13 +143,9 @@ export default function EditNotePage({ params }: EditNotePageProps) {
     )
   }
 
-  // Show loading while redirecting
+  // Don't render anything if not authenticated (will redirect)
   if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    )
+    return null
   }
 
   if (!note) {
@@ -171,9 +175,9 @@ export default function EditNotePage({ params }: EditNotePageProps) {
         <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => router.push(`/trips/${params.id}`)}
                 className="flex items-center"
               >

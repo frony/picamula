@@ -11,22 +11,27 @@ import { ArrowLeft, MapPin } from 'lucide-react'
 export default function NewTripPage() {
   const router = useRouter()
   const { user, isLoading } = useAuth()
-  const [mounted, setMounted] = React.useState(false)
 
-  // Ensure component is mounted on client side
-  React.useEffect(() => {
-    setMounted(true)
-  }, [])
+  // Track if we've already checked auth to prevent duplicate redirects
+  const hasCheckedAuthRef = React.useRef(false)
 
-  // Handle client-side navigation only
+  // Handle authentication - only check once
   React.useEffect(() => {
-    if (mounted && !isLoading && !user) {
-      router.push('/')
+    // Wait for auth to resolve
+    if (isLoading) return
+
+    // Only check once
+    if (hasCheckedAuthRef.current) return
+    hasCheckedAuthRef.current = true
+
+    // Redirect if not authenticated
+    if (!user) {
+      router.push('/login')
     }
-  }, [user, isLoading, router, mounted])
+  }, [user, isLoading, router])
 
-  // Show loading until mounted and auth is resolved
-  if (!mounted || isLoading) {
+  // Show loading while auth is resolving
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -34,13 +39,9 @@ export default function NewTripPage() {
     )
   }
 
-  // Show loading while redirecting
+  // Don't render anything if not authenticated (will redirect)
   if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    )
+    return null
   }
 
   const handleSuccess = () => {
@@ -58,9 +59,9 @@ export default function NewTripPage() {
         <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => router.push('/')}
                 className="flex items-center"
               >

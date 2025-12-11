@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useTripExpenses } from '@/hooks/useTripExpenses';
 import { ExpenseForm } from './ExpenseForm';
 import { ExpenseList } from './ExpenseList';
@@ -43,52 +43,84 @@ export const TripExpensesSection: React.FC<TripExpensesSectionProps> = ({
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
 
+  // Create stable dependency values to prevent infinite re-renders
+  const tripOwnerId = tripOwner?.id;
+  // Memoize participants key - only changes when actual content changes
+  const participantsKey = useMemo(() => {
+    if (!participants || participants.length === 0) return '';
+    return [...participants].sort().join(',');
+  }, [participants]);
+
+  // Use ref to track if we've already fetched for current data
+  const fetchedForRef = useRef<string>('');
+  // Keep refs to latest values so we can use them in the async function
+  const tripOwnerRef = useRef(tripOwner);
+  const participantsRef = useRef(participants);
+
+  // Update refs on every render
+  tripOwnerRef.current = tripOwner;
+  participantsRef.current = participants;
+
   // Fetch all travelers (trip owner + participants)
   useEffect(() => {
+    const fetchKey = `${tripOwnerId}-${participantsKey}`;
+
+    console.log('=== TripExpensesSection useEffect ===');
+    console.log('fetchKey:', fetchKey);
+    console.log('fetchedForRef.current:', fetchedForRef.current);
+
+    // Skip if we've already fetched for this exact combination
+    if (fetchedForRef.current === fetchKey) {
+      console.log('⏭️ Skipping fetch - already fetched for this key');
+      return;
+    }
+
+    // Set ref IMMEDIATELY to prevent concurrent fetches
+    fetchedForRef.current = fetchKey;
+    console.log('✅ Set fetchedForRef to:', fetchKey);
+
     const fetchTravelers = async () => {
       console.log('=== Fetching travelers ===');
-      console.log('Trip owner:', tripOwner);
-      console.log('Participants:', participants);
-      
+      const currentTripOwner = tripOwnerRef.current;
+      const currentParticipants = participantsRef.current;
+      console.log('Trip owner:', currentTripOwner);
+      console.log('Participants:', currentParticipants);
+
       setLoadingUsers(true);
       try {
         const users: User[] = [];
-        
+
         // Add trip owner
-        if (tripOwner && tripOwner.id) {
-          users.push(tripOwner);
-          console.log('Added trip owner:', tripOwner);
+        if (currentTripOwner && currentTripOwner.id) {
+          users.push(currentTripOwner);
+          console.log('Added trip owner:', currentTripOwner);
         } else {
-          console.error('Trip owner is missing or invalid:', tripOwner);
+          console.error('Trip owner is missing or invalid:', currentTripOwner);
         }
-        
+
         // Fetch participant user objects if there are participants
-        console.log('Raw participants array:', participants);
-        console.log('Participants type:', typeof participants);
-        console.log('Is array?', Array.isArray(participants));
-        
-        if (participants && participants.length > 0) {
+        console.log('Raw participants array:', currentParticipants);
+
+        if (currentParticipants && currentParticipants.length > 0) {
           // Filter to only valid email addresses
-          const emails = participants.filter(p => {
+          const emails = currentParticipants.filter(p => {
             const isEmail = typeof p === 'string' && p.includes('@');
             console.log(`Checking participant "${p}": isEmail=${isEmail}`);
             return isEmail;
           });
           console.log('Filtered emails:', emails);
-          
+
           if (emails.length > 0) {
             console.log('Fetching participants by emails:', emails);
             try {
               const response = await usersApi.getByEmails(emails);
               const participantUsers = response.data;
               console.log('Received participant users:', participantUsers);
-              console.log('Number of participant users:', participantUsers?.length);
-              
+
               // Add participants (avoid duplicates with trip owner)
               participantUsers.forEach(user => {
                 console.log(`Processing user ${user.id} (${user.firstName} ${user.lastName})`);
-                console.log(`Trip owner ID: ${tripOwner.id}, User ID: ${user.id}, Equal? ${user.id === tripOwner.id}`);
-                if (user.id !== tripOwner.id) {
+                if (user.id !== currentTripOwner.id) {
                   users.push(user);
                   console.log('✅ Added participant:', user);
                 } else {
@@ -99,19 +131,20 @@ export const TripExpensesSection: React.FC<TripExpensesSectionProps> = ({
               console.error('Failed to fetch participants:', err);
             }
           } else {
-            console.log('⚠️ No valid email addresses in participants:', participants);
+            console.log('⚠️ No valid email addresses in participants');
           }
         } else {
           console.log('⚠️ No participants or empty array');
         }
-        
+
         console.log('Final available users:', users);
         setAvailableUsers(users);
       } catch (error) {
         console.error('Failed to fetch travelers:', error);
         // Fallback to just the trip owner if it exists
-        if (tripOwner && tripOwner.id) {
-          setAvailableUsers([tripOwner]);
+        const currentTripOwner = tripOwnerRef.current;
+        if (currentTripOwner && currentTripOwner.id) {
+          setAvailableUsers([currentTripOwner]);
         } else {
           setAvailableUsers([]);
         }
@@ -120,13 +153,13 @@ export const TripExpensesSection: React.FC<TripExpensesSectionProps> = ({
       }
     };
 
-    if (tripOwner && tripOwner.id) {
+    if (tripOwnerId) {
       fetchTravelers();
     } else {
-      console.error('Cannot fetch travelers - trip owner is missing:', tripOwner);
+      console.error('Cannot fetch travelers - tripOwnerId is missing');
       setLoadingUsers(false);
     }
-  }, [tripOwner, participants]);
+  }, [tripOwnerId, participantsKey]); // Only primitive dependencies!
 
   const handleCreateOrUpdate = async (data: any) => {
     if (editingExpense) {

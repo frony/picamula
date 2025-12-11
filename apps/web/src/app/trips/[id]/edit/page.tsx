@@ -23,36 +23,31 @@ export default function EditTripPage({ params }: EditTripPageProps) {
   const { toast } = useToast()
   const [trip, setTrip] = React.useState<Trip | null>(null)
   const [loading, setLoading] = React.useState(true)
-  const [mounted, setMounted] = React.useState(false)
+  const toastRef = React.useRef(toast)
 
-  // Ensure component is mounted on client side
+  // Track if we've already fetched to prevent duplicate fetches
+  const hasFetchedRef = React.useRef(false)
+  // Keep user id ref for checking ownership in async function
+  const userIdRef = React.useRef(user?.id)
+
+  // Keep refs updated
   React.useEffect(() => {
-    setMounted(true)
-  }, [])
+    toastRef.current = toast
+  }, [toast])
 
-  // Handle client-side navigation only
   React.useEffect(() => {
-    if (mounted && !authLoading && !user) {
-      router.push('/')
-    }
-  }, [user, authLoading, router, mounted])
+    userIdRef.current = user?.id
+  }, [user?.id])
 
-  // Fetch trip data
-  React.useEffect(() => {
-    if (mounted && user && params.id) {
-      fetchTrip()
-    }
-  }, [mounted, user, params.id])
-
-  const fetchTrip = async () => {
+  const fetchTrip = React.useCallback(async () => {
     try {
       setLoading(true)
       const response = await tripsApi.getById(params.id)
       setTrip(response.data)
-      
-      // Check if user is the owner
-      if (response.data.owner.id !== user?.id) {
-        toast({
+
+      // Check if user is the owner (use ref to get latest value)
+      if (response.data.owner.id !== userIdRef.current) {
+        toastRef.current({
           title: 'Access Denied',
           description: 'You can only edit trips that you own',
           variant: 'destructive',
@@ -61,7 +56,7 @@ export default function EditTripPage({ params }: EditTripPageProps) {
         return
       }
     } catch (error: any) {
-      toast({
+      toastRef.current({
         title: 'Error',
         description: 'Failed to fetch trip details',
         variant: 'destructive',
@@ -70,7 +65,26 @@ export default function EditTripPage({ params }: EditTripPageProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [params.id, router])
+
+  // Handle authentication and data fetching - only run once
+  React.useEffect(() => {
+    // Wait for auth to resolve
+    if (authLoading) return
+
+    // Redirect if not authenticated
+    if (!user) {
+      router.push('/login')
+      return
+    }
+
+    // Only fetch once per mount
+    if (hasFetchedRef.current) return
+    hasFetchedRef.current = true
+
+    // Fetch trip data if authenticated
+    fetchTrip()
+  }, [user, authLoading, router, fetchTrip])
 
   const handleSuccess = () => {
     router.push(`/trips/${params.id}`)
@@ -80,8 +94,8 @@ export default function EditTripPage({ params }: EditTripPageProps) {
     router.push(`/trips/${params.id}`)
   }
 
-  // Show loading until mounted and auth is resolved
-  if (!mounted || authLoading || loading) {
+  // Show loading while auth is resolving or data is loading
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -89,13 +103,9 @@ export default function EditTripPage({ params }: EditTripPageProps) {
     )
   }
 
-  // Show loading while redirecting
+  // Don't render anything if not authenticated (will redirect)
   if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    )
+    return null
   }
 
   if (!trip) {
@@ -125,9 +135,9 @@ export default function EditTripPage({ params }: EditTripPageProps) {
         <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => router.push(`/trips/${params.id}`)}
                 className="flex items-center"
               >

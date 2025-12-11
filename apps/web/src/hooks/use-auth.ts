@@ -1,129 +1,69 @@
 'use client'
 
-import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { useSession, signIn as nextAuthSignIn, signOut as nextAuthSignOut } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+import type { LoginDto, RegisterDto, SignUpResponse } from '@junta-tribo/shared'
 import { authApi } from '@/lib/api'
-import { apiClient } from '@/lib/api-client'
-import { LOCAL_STORAGE_KEYS } from '@junta-tribo/shared'
-import type { User, LoginDto, RegisterDto, AuthResponse, SignUpResponse } from '@junta-tribo/shared'
 
-interface AuthState {
-  user: User | null
-  token: string | null
-  refreshToken: string | null
+interface UseAuthReturn {
+  user: any | null
   isLoading: boolean
   isAuthenticated: boolean
   login: (credentials: LoginDto) => Promise<void>
   register: (userData: RegisterDto) => Promise<SignUpResponse>
   logout: () => Promise<void>
-  setUser: (user: User | null) => void
-  setLoading: (loading: boolean) => void
-  updateToken: (token: string) => void
 }
 
-export const useAuth = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      user: null,
-      token: null,
-      refreshToken: null,
-      isLoading: false,
-      isAuthenticated: false,
+export function useAuth(): UseAuthReturn {
+  const { data: session, status } = useSession()
+  const router = useRouter()
 
-      login: async (credentials: LoginDto) => {
-        try {
-          set({ isLoading: true })
-          const response = await authApi.login(credentials)
-          const { accessToken, refreshToken } = response.data
-
-          // Store tokens in localStorage
-          localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, accessToken)
-          if (refreshToken) {
-            localStorage.setItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN, refreshToken)
-          }
-          
-          // Get user data separately
-          const userResponse = await authApi.me()
-          const user = userResponse.data
-          
-          set({
-            user,
-            token: accessToken,
-            refreshToken: refreshToken || null,
-            isAuthenticated: true,
-            isLoading: false,
-          })
-        } catch (error) {
-          set({ isLoading: false })
-          throw error
-        }
-      },
-
-      register: async (userData: RegisterDto): Promise<SignUpResponse> => {
-        set({ isLoading: true })
-        try {
-          const response = await authApi.register(userData)
-          const signUpResponse = response.data
-          
-          // IAM sign-up doesn't auto-login, just returns user info
-          set({
-            user: null,
-            token: null,
-            refreshToken: null,
-            isAuthenticated: false,
-            isLoading: false,
-          })
-          
-          return signUpResponse
-        } catch (error) {
-          set({ isLoading: false })
-          throw error
-        }
-      },
-
-      logout: async () => {
-        try {
-          await authApi.logout()
-        } catch (error) {
-          // Continue with logout even if API call fails
-          console.error('Logout API call failed:', error)
-        } finally {
-          // Clear tokens and cancel scheduled refresh
-          apiClient.clearTokens()
-
-          set({
-            user: null,
-            token: null,
-            refreshToken: null,
-            isAuthenticated: false,
-            isLoading: false,
-          })
-        }
-      },
-
-      setUser: (user: User | null) => {
-        set({ user, isAuthenticated: !!user })
-      },
-
-      setLoading: (isLoading: boolean) => {
-        set({ isLoading })
-      },
-
-      updateToken: (token: string) => {
-        set({ token })
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, token)
-        }
-      },
-    }),
-    {
-      name: LOCAL_STORAGE_KEYS.USER_DATA,
-      partialize: (state) => ({
-        user: state.user,
-        token: state.token,
-        refreshToken: state.refreshToken,
-        isAuthenticated: state.isAuthenticated,
-      }),
+  const login = async (credentials: LoginDto & { captchaToken?: string }) => {
+    try {
+      // Let NextAuth handle the redirect - it will wait for session to be set
+      await nextAuthSignIn('credentials', {
+        email: credentials.email,
+        password: credentials.password,
+        captchaToken: credentials.captchaToken,
+        callbackUrl: '/',  // Redirect to dashboard (root page) after successful login
+        // redirect defaults to true, so NextAuth will handle the redirect
+      })
+    } catch (error) {
+      throw error
     }
-  )
-)
+  }
+
+  const register = async (userData: RegisterDto): Promise<SignUpResponse> => {
+    try {
+      const response = await authApi.register(userData)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
+
+  const logout = async () => {
+    try {
+      // Call backend logout endpoint if needed
+      await authApi.logout().catch(() => {
+        // Continue with logout even if backend call fails
+      })
+    } catch (error) {
+      console.error('Logout API call failed:', error)
+    } finally {
+      // Sign out with NextAuth
+      await nextAuthSignOut({ redirect: false })
+      router.push('/login')
+      router.refresh()
+    }
+  }
+
+  return {
+    user: session?.user || null,
+    isLoading: status === 'loading',
+    isAuthenticated: status === 'authenticated',
+    login,
+    register,
+    logout,
+  }
+}
