@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { MediaFile, MediaFileType } from '@junta-tribo/shared'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Image as ImageIcon, Video, Play, X, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { mediaApi } from '@/lib/api'
@@ -160,6 +160,12 @@ export function MediaGallery({ mediaFiles, tripId, isOwner, onMediaDeleted }: Me
       {selectedMedia && (
         <Dialog open={!!selectedMedia} onOpenChange={() => setSelectedMedia(null)}>
           <DialogContent className="max-w-4xl w-full p-0">
+            <DialogTitle className="sr-only">
+              {selectedMedia.type === MediaFileType.IMAGE ? 'Photo' : 'Video'} Viewer
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              Viewing {selectedMedia.originalName || (selectedMedia.type === MediaFileType.IMAGE ? 'trip photo' : 'trip video')}
+            </DialogDescription>
             <div className="relative bg-black">
               <Button
                 variant="ghost"

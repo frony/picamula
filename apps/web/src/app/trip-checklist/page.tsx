@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, Plus, Trash2, RotateCcw, Loader2 } from 'lucide-react';
 import { todosApi, type TodoItem } from '@/lib/api';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function TripChecklistPage() {
   const router = useRouter();
+  const { isLoading: authLoading, isAuthenticated } = useAuth();
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
@@ -14,8 +16,17 @@ export default function TripChecklistPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Wait for auth to resolve
+    if (authLoading) return;
+
+    // Redirect to login if not authenticated
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+
     fetchTodos();
-  }, []);
+  }, [authLoading, isAuthenticated, router]);
 
   const fetchTodos = async () => {
     try {
@@ -50,7 +61,7 @@ export default function TripChecklistPage() {
   const handleToggle = async (id: number) => {
     try {
       const response = await todosApi.toggle(id);
-      setTodos(todos.map(todo => 
+      setTodos(todos.map(todo =>
         todo.id === id ? response.data : todo
       ));
     } catch (err: any) {
@@ -83,7 +94,7 @@ export default function TripChecklistPage() {
   const completedCount = todos.filter(todo => todo.status === 'completed').length;
   const totalCount = todos.length;
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
@@ -100,7 +111,7 @@ export default function TripChecklistPage() {
               <h1 className="text-3xl font-bold text-gray-900">Trip Preparation Checklist</h1>
               <p className="text-gray-600 mt-1">Your reusable checklist for every trip</p>
             </div>
-            <button onClick={() => router.push('/trips')} className="text-blue-600 hover:text-blue-700 font-medium">
+            <button onClick={() => router.push('/')} className="text-blue-600 hover:text-blue-700 font-medium">
               ← Back to Trips
             </button>
           </div>

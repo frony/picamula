@@ -7,20 +7,22 @@ import { Dashboard } from '@/components/dashboard/dashboard'
 
 export default function Home() {
   const router = useRouter()
-  const { user, isLoading } = useAuth()
+  const { isLoading, isAuthenticated } = useAuth()
   const [mounted, setMounted] = React.useState(false)
+  const hasRedirectedRef = React.useRef(false)
 
   // Ensure component is mounted on client side
   React.useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Redirect unauthenticated users to login
+  // Redirect unauthenticated users to login - only once
   React.useEffect(() => {
-    if (mounted && !isLoading && !user) {
+    if (mounted && !isLoading && !isAuthenticated && !hasRedirectedRef.current) {
+      hasRedirectedRef.current = true
       router.push('/login')
     }
-  }, [user, isLoading, router, mounted])
+  }, [isAuthenticated, isLoading, router, mounted])
 
   // Show loading until mounted and auth is resolved
   if (!mounted || isLoading) {
@@ -32,7 +34,7 @@ export default function Home() {
   }
 
   // Show loading while redirecting unauthenticated users
-  if (!user) {
+  if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
