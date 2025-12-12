@@ -12,12 +12,13 @@ import type { Trip } from '@junta-tribo/shared'
 import { ArrowLeft, Edit } from 'lucide-react'
 
 interface EditTripPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
-export default function EditTripPage({ params }: EditTripPageProps) {
+export default function EditTripPage({ params: paramsPromise }: EditTripPageProps) {
+  const params = React.use(paramsPromise)
   const router = useRouter()
   const { user, isLoading: authLoading } = useAuth()
   const { toast } = useToast()

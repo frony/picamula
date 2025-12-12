@@ -28,12 +28,13 @@ import {
 } from 'lucide-react'
 
 interface TripDetailsPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
-export default function TripDetailsPage({ params }: TripDetailsPageProps) {
+export default function TripDetailsPage({ params: paramsPromise }: TripDetailsPageProps) {
+  const params = React.use(paramsPromise)
   const router = useRouter()
   const { user, isLoading: authLoading } = useAuth()
   const [trip, setTrip] = React.useState<Trip | null>(null)

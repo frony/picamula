@@ -14,13 +14,14 @@ import { ArrowLeft, FileText, Calendar } from 'lucide-react'
 import type { Note } from '@junta-tribo/shared'
 
 interface EditNotePageProps {
-  params: {
+  params: Promise<{
     id: string
     noteId: string
-  }
+  }>
 }
 
-export default function EditNotePage({ params }: EditNotePageProps) {
+export default function EditNotePage({ params: paramsPromise }: EditNotePageProps) {
+  const params = React.use(paramsPromise)
   const router = useRouter()
   const { user, isLoading: authLoading } = useAuth()
   const { toast } = useToast()
