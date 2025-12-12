@@ -13,12 +13,13 @@ import { useToast } from '@/hooks/use-toast'
 import { ArrowLeft, FileText, Calendar } from 'lucide-react'
 
 interface AddNotePageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
-export default function AddNotePage({ params }: AddNotePageProps) {
+export default function AddNotePage({ params: paramsPromise }: AddNotePageProps) {
+  const params = React.use(paramsPromise)
   const router = useRouter()
   const { user, isLoading: authLoading } = useAuth()
   const { toast } = useToast()

@@ -7,7 +7,12 @@ config({ path: path.resolve(__dirname, '../../.env') })
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ['localhost'],
+    remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+      },
+    ],
   },
   transpilePackages: ['@junta-tribo/shared'],
   async headers() {
