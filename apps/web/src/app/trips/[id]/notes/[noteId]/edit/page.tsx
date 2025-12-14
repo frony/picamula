@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/hooks/use-auth'
 import { notesApi } from '@/lib/api'
 import { Button } from '@/components/ui/button'
@@ -13,15 +13,8 @@ import { useToast } from '@/hooks/use-toast'
 import { ArrowLeft, FileText, Calendar } from 'lucide-react'
 import type { Note } from '@junta-tribo/shared'
 
-interface EditNotePageProps {
-  params: Promise<{
-    id: string
-    noteId: string
-  }>
-}
-
-export default function EditNotePage({ params: paramsPromise }: EditNotePageProps) {
-  const params = React.use(paramsPromise)
+export default function EditNotePage() {
+  const params = useParams<{ id: string; noteId: string }>()
   const router = useRouter()
   const { user, isLoading: authLoading } = useAuth()
   const { toast } = useToast()

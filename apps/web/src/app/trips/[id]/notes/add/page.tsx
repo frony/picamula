@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/hooks/use-auth'
 import { notesApi } from '@/lib/api'
 import { Button } from '@/components/ui/button'
@@ -12,14 +12,8 @@ import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
 import { ArrowLeft, FileText, Calendar } from 'lucide-react'
 
-interface AddNotePageProps {
-  params: Promise<{
-    id: string
-  }>
-}
-
-export default function AddNotePage({ params: paramsPromise }: AddNotePageProps) {
-  const params = React.use(paramsPromise)
+export default function AddNotePage() {
+  const params = useParams<{ id: string }>()
   const router = useRouter()
   const { user, isLoading: authLoading } = useAuth()
   const { toast } = useToast()
