@@ -10,6 +10,9 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'JuntaTribo - Travel Together',
   description: 'Plan and organize your trips with friends',
+  icons: {
+    icon: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({

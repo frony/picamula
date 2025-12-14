@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/hooks/use-auth'
 import { tripsApi } from '@/lib/api'
 import { EditTripForm } from '@/components/trips/edit-trip-form'
@@ -11,14 +11,8 @@ import { useToast } from '@/hooks/use-toast'
 import type { Trip } from '@junta-tribo/shared'
 import { ArrowLeft, Edit } from 'lucide-react'
 
-interface EditTripPageProps {
-  params: Promise<{
-    id: string
-  }>
-}
-
-export default function EditTripPage({ params: paramsPromise }: EditTripPageProps) {
-  const params = React.use(paramsPromise)
+export default function EditTripPage() {
+  const params = useParams<{ id: string }>()
   const router = useRouter()
   const { user, isLoading: authLoading } = useAuth()
   const { toast } = useToast()

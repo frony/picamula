@@ -15,6 +15,9 @@ const nextConfig = {
     ],
   },
   transpilePackages: ['@junta-tribo/shared'],
+  serverActions: {
+    allowedOrigins: ['juntatribo.com', 'www.juntatribo.com', 'localhost:3003'],
+  },
   async headers() {
     return [
       {

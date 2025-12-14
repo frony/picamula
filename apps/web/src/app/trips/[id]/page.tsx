@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/hooks/use-auth'
 import { tripsApi, notesApi } from '@/lib/api'
 import { Button } from '@/components/ui/button'
@@ -27,14 +27,8 @@ import {
   Trash2
 } from 'lucide-react'
 
-interface TripDetailsPageProps {
-  params: Promise<{
-    id: string
-  }>
-}
-
-export default function TripDetailsPage({ params: paramsPromise }: TripDetailsPageProps) {
-  const params = React.use(paramsPromise)
+export default function TripDetailsPage() {
+  const params = useParams<{ id: string }>()
   const router = useRouter()
   const { user, isLoading: authLoading } = useAuth()
   const [trip, setTrip] = React.useState<Trip | null>(null)
