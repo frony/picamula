@@ -40,7 +40,7 @@ export class TripExpenses {
   @Column()
   memo: string;
 
-  @Column({ type: 'double precision' })
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
   amount: number;
 
   @ManyToOne(() => Trip, { onDelete: 'CASCADE' })
