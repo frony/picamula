@@ -17,6 +17,7 @@ import { TripAddSlugAndChangeIdToNumber1730568000000 } from './src/migrations/17
 import { CreateMediaFileTable1732406400000 } from './src/migrations/1732406400000-CreateMediaFileTable';
 import { CreateEmailVerificationTokenTable1759360000000 } from './src/migrations/1759360000000-CreateEmailVerificationTokenTable';
 import { AddIsVerifiedToUser1759360100000 } from './src/migrations/1759360100000-AddIsVerifiedToUser';
+import { AddStartCityToTrip1734300000000 } from './src/migrations/1734300000000-AddStartCityToTrip';
 import { CreateTripTodoItemsTable1733000000000 } from './src/migrations/1733000000000-CreateTripTodoItemsTable';
 import { UpdateTripTodoItemsToUserRelation1733100000000 } from './src/migrations/1733100000000-UpdateTripTodoItemsToUserRelation';
 import { CreateTripExpensesTable1733200000000 } from './src/migrations/1733200000000-CreateTripExpensesTable';
@@ -53,6 +54,7 @@ export default new DataSource({
     UserReplaceNameByFirstAndLastName1759355264384,
     CreateEmailVerificationTokenTable1759360000000,
     AddIsVerifiedToUser1759360100000,
+    AddStartCityToTrip1734300000000,
   ],
   migrationsTableName: 'migrations',
   synchronize: false,
