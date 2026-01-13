@@ -26,6 +26,7 @@ import {
   MoreHorizontal,
   Trash2
 } from 'lucide-react'
+import ItineraryMap from '@/components/ItineraryMap'
 
 export default function TripDetailsPage() {
   const params = useParams<{ id: string }>()
@@ -78,8 +79,6 @@ export default function TripDetailsPage() {
     // Fetch trip data if authenticated
     fetchTrip(true)
   }, [user, authLoading, router, fetchTrip])
-
-
 
   const handleAddNote = async () => {
     try {
@@ -254,7 +253,10 @@ export default function TripDetailsPage() {
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8">
-        {/* Trip Header */}
+        {/* Itinerary Map */}
+        {(trip.startCity || trip.destination) && (
+          <ItineraryMap startCityName={trip.startCity || trip.destination} />
+        )}
         <div className="mb-6 md:mb-8">
           <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
             <div className="flex-1">
@@ -268,6 +270,11 @@ export default function TripDetailsPage() {
                 <MapPin className="w-5 h-5 mr-2" />
                 <span className="text-lg">{trip.destination}</span>
               </div>
+              {trip.startCity && (
+                <div className="flex items-center text-gray-500 mb-2 ml-7">
+                  <span className="text-sm">From: {trip.startCity}</span>
+                </div>
+              )}
               <div className="flex items-center text-gray-600">
                 <User className="w-4 h-4 mr-2" />
                 <span className="text-sm">Created by {trip.owner.firstName} {trip.owner.lastName}</span>

@@ -46,6 +46,16 @@ export class UpdateTripDto {
   destination?: string;
 
   @ApiProperty({
+    example: 'New York, USA',
+    description: 'Starting city of the trip',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  startCity?: string;
+
+  @ApiProperty({
     example: '2024-07-01',
     description: 'Trip start date',
     required: false,

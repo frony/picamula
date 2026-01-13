@@ -18,6 +18,7 @@ const createTripSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title must be less than 100 characters'),
   description: z.string().optional(),
   destination: z.string().min(1, 'Destination is required').max(100, 'Destination must be less than 100 characters'),
+  startCity: z.string().min(1, 'Start city is required').max(100, 'Start city must be less than 100 characters'),
   startDate: z.string().min(1, 'Start date is required'),
   endDate: z.string().min(1, 'End date is required'),
   budget: z.string().optional(),
@@ -83,6 +84,7 @@ export function CreateTripForm({ onSuccess, onCancel }: CreateTripFormProps) {
         title: data.title,
         description: data.description || undefined,
         destination: data.destination,
+        startCity: data.startCity,
         startDate: new Date(data.startDate),
         endDate: new Date(data.endDate),
         budget: data.budget ? parseFloat(data.budget) : undefined,
@@ -136,6 +138,19 @@ export function CreateTripForm({ onSuccess, onCancel }: CreateTripFormProps) {
         />
         {errors.destination && (
           <p className="text-sm text-red-600">{errors.destination.message}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="startCity" className="text-sm font-medium">Start City *</Label>
+        <Input
+          id="startCity"
+          placeholder="e.g., New York, USA"
+          className="w-full"
+          {...register('startCity')}
+        />
+        {errors.startCity && (
+          <p className="text-sm text-red-600">{errors.startCity.message}</p>
         )}
       </div>
 

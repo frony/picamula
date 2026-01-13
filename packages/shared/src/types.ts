@@ -174,6 +174,7 @@ export interface Trip {
   title: string;
   description?: string;
   destination: string;
+  startCity: string;
   startDate: Date;
   endDate: Date;
   status: TripStatus;
@@ -192,6 +193,7 @@ export interface CreateTripDto {
   title: string;
   description?: string;
   destination: string;
+  startCity: string;
   startDate: Date;
   endDate: Date;
   status?: TripStatus;
@@ -204,6 +206,7 @@ export interface UpdateTripDto {
   title?: string;
   description?: string;
   destination?: string;
+  startCity?: string;
   startDate?: Date;
   endDate?: Date;
   status?: TripStatus;

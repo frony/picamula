@@ -42,6 +42,15 @@ export class CreateTripDto {
   destination: string;
 
   @ApiProperty({
+    example: 'New York, USA',
+    description: 'Starting city of the trip',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  startCity: string;
+
+  @ApiProperty({
     example: '2024-07-01',
     description: 'Trip start date',
   })

@@ -40,6 +40,9 @@ export class Trip {
   @Column()
   destination: string;
 
+  @Column({ length: 100, default: '' })
+  startCity: string;
+
   @Column('date')
   startDate: Date;
 
