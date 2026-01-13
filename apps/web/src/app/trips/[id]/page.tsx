@@ -26,6 +26,7 @@ import {
   MoreHorizontal,
   Trash2
 } from 'lucide-react'
+import ItineraryMap from '@/components/ItineraryMap'
 
 export default function TripDetailsPage() {
   const params = useParams<{ id: string }>()
@@ -78,8 +79,6 @@ export default function TripDetailsPage() {
     // Fetch trip data if authenticated
     fetchTrip(true)
   }, [user, authLoading, router, fetchTrip])
-
-
 
   const handleAddNote = async () => {
     try {
@@ -254,7 +253,10 @@ export default function TripDetailsPage() {
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8">
-        {/* Trip Header */}
+        {/* Itinerary Map */}
+        {(trip.startCity || trip.destination) && (
+          <ItineraryMap startCityName={trip.startCity || trip.destination} />
+        )}
         <div className="mb-6 md:mb-8">
           <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
             <div className="flex-1">
