@@ -194,6 +194,7 @@ export default function ItineraryMap({ startCityName }: ItineraryMapProps) {
         options={{
           streetViewControl: false,
           mapTypeControl: true,
+          zoomControl: true,
         }}
       >
         {/* Markers for each city */}
