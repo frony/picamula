@@ -13,6 +13,7 @@ import { User } from '../../users/entities/user.entity';
 import { Note } from '../../notes/entities/note.entity';
 import { MediaFile } from './media-file.entity';
 import { TripExpenses } from '../../expenses/entities/trip-expense.entity';
+import { Destination } from '../../destination/entities/destination.entity';
 
 export enum TripStatus {
   PLANNING = 'planning',
@@ -65,15 +66,15 @@ export class Trip {
   @Column('simple-json', { nullable: true })
   itinerary?: any[];
 
-  @OneToMany(() => Note, (note) => note.trip, { 
+  @OneToMany(() => Note, (note) => note.trip, {
     cascade: true,
-    eager: false 
+    eager: false
   })
   notes: Note[];
 
-  @OneToMany(() => MediaFile, (mediaFile) => mediaFile.trip, { 
+  @OneToMany(() => MediaFile, (mediaFile) => mediaFile.trip, {
     cascade: true,
-    eager: false 
+    eager: false
   })
   mediaFiles: MediaFile[];
 
@@ -86,6 +87,12 @@ export class Trip {
   @ManyToOne(() => User, (user) => user.trips, { eager: true })
   @JoinColumn({ name: 'ownerId' })
   owner: User;
+
+  @OneToMany(() => Destination, (destination) => destination.trip, {
+    cascade: true,
+    eager: false
+  })
+  destinations: Destination[];
 
   @Column()
   ownerId: number;

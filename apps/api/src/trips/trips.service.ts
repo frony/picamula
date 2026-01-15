@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan, QueryRunner } from 'typeorm';
 import { Trip } from './entities/trip.entity';
 import { MediaFile } from './entities/media-file.entity';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
+import { Destination } from '../destination/entities/destination.entity';
 
 @Injectable()
 export class TripsService {
@@ -15,14 +16,37 @@ export class TripsService {
     private tripsRepository: Repository<Trip>,
     @InjectRepository(MediaFile)
     private mediaFileRepository: Repository<MediaFile>,
-  ) {}
+    @InjectRepository(Destination)
+    private destinationRepository: Repository<Destination>,
+  ) { }
 
   async create(createTripDto: CreateTripDto, ownerId: number): Promise<Trip> {
-    const trip = this.tripsRepository.create({
-      ...createTripDto,
-      ownerId,
-    });
-    return await this.tripsRepository.save(trip);
+    const { destinations, ...tripData } = createTripDto;
+
+    try {
+      const trip = this.tripsRepository.create({
+        ...tripData,
+        ownerId,
+      } as Partial<Trip>);
+
+      const savedTrip = await this.tripsRepository.save(trip);
+
+      if (destinations && destinations.length > 0) {
+        for (const destination of destinations) {
+          const { ...destinationData } = destination;
+          const destinationEntity = this.destinationRepository.create({
+            ...destinationData,
+            tripId: savedTrip.id,
+          } as Partial<Destination>);
+          await this.destinationRepository.save(destinationEntity);
+        }
+      }
+
+      return savedTrip;
+    } catch (error) {
+      this.logger.error(`Error creating trip for owner ${ownerId}:`, error);
+      throw new InternalServerErrorException('Failed to create trip');
+    }
   }
 
   async findAll(userId: number): Promise<Trip[]> {
@@ -82,10 +106,10 @@ export class TripsService {
 
   async update(id: number, updateTripDto: UpdateTripDto, userId: number): Promise<Trip> {
     const trip = await this.findOne(id, userId);
-    
+
     // Extract mediaFiles from DTO and handle separately
     const { mediaFiles, ...tripData } = updateTripDto;
-    
+
     // Use transaction to ensure atomicity
     const queryRunner = this.tripsRepository.manager.connection.createQueryRunner();
     await queryRunner.connect();
@@ -122,10 +146,10 @@ export class TripsService {
 
   async updateBySlug(slug: string, updateTripDto: UpdateTripDto, userId: number): Promise<Trip> {
     const trip = await this.findBySlug(slug, userId);
-    
+
     // Extract mediaFiles from DTO and handle separately
     const { mediaFiles, ...tripData } = updateTripDto;
-    
+
     // Use transaction to ensure atomicity
     const queryRunner = this.tripsRepository.manager.connection.createQueryRunner();
     await queryRunner.connect();
@@ -179,7 +203,7 @@ export class TripsService {
 
   async findUpcoming(userId: number): Promise<Trip[]> {
     return await this.tripsRepository.find({
-      where: { 
+      where: {
         ownerId: userId,
         startDate: MoreThan(new Date())
       },
