@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useEffect } from 'react';
+import { useCallback, useRef, useEffect, KeyboardEvent } from 'react';
 import { useJsApiLoader, Autocomplete } from '@react-google-maps/api';
 import { Input } from '@/components/ui/input';
 
@@ -41,6 +41,8 @@ export function PlaceAutocomplete({
   const onAutocompleteLoad = useCallback(
     (autocomplete: google.maps.places.Autocomplete) => {
       autocompleteRef.current = autocomplete;
+      // Request geometry field to ensure we get location data
+      autocomplete.setFields(['formatted_address', 'geometry', 'name']);
     },
     []
   );
@@ -48,18 +50,41 @@ export function PlaceAutocomplete({
   const onPlaceChanged = useCallback(() => {
     if (autocompleteRef.current) {
       const place = autocompleteRef.current.getPlace();
-      if (place.geometry?.location) {
-        const result: PlaceResult = {
-          name: place.name || '',
-          lat: place.geometry.location.lat(),
-          lng: place.geometry.location.lng(),
-          formattedAddress: place.formatted_address || place.name || '',
-        };
-        onChange(result.formattedAddress);
-        onPlaceSelect(result);
+      
+      // Check if place and geometry exist (user selected from dropdown)
+      if (!place || !place.geometry || !place.geometry.location) {
+        // User pressed enter without selecting - just update the text value
+        return;
       }
+
+      const result: PlaceResult = {
+        name: place.name || '',
+        lat: place.geometry.location.lat(),
+        lng: place.geometry.location.lng(),
+        formattedAddress: place.formatted_address || place.name || '',
+      };
+      onChange(result.formattedAddress);
+      onPlaceSelect(result);
     }
   }, [onChange, onPlaceSelect]);
+
+  const handleKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Tab' || e.key === 'Enter') {
+      // Find the highlighted suggestion in the dropdown
+      const pacContainer = document.querySelector('.pac-container');
+      if (pacContainer) {
+        const highlighted = pacContainer.querySelector('.pac-item-selected') as HTMLElement;
+        const firstItem = pacContainer.querySelector('.pac-item') as HTMLElement;
+        const itemToSelect = highlighted || firstItem;
+        
+        if (itemToSelect) {
+          // Simulate a click on the suggestion to trigger selection
+          itemToSelect.click();
+          e.preventDefault();
+        }
+      }
+    }
+  }, []);
 
   // Sync input value when value prop changes
   useEffect(() => {
@@ -93,6 +118,7 @@ export function PlaceAutocomplete({
         placeholder={placeholder}
         defaultValue={value}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={handleKeyDown}
         className={className}
         disabled={disabled}
       />
