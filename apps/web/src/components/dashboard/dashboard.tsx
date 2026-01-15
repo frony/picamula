@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast'
 import { formatDateRange, calculateTripDuration } from '@/lib/utils'
 import { TRIP_STATUS_LABELS } from '@junta-tribo/shared'
 import type { Trip } from '@junta-tribo/shared'
-import { Plus, MapPin, Calendar, Users } from 'lucide-react'
+import { Plus, MapPin, Calendar, Users, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 export function Dashboard() {
@@ -17,6 +17,8 @@ export function Dashboard() {
   const [trips, setTrips] = useState<Trip[]>([])
   const [loading, setLoading] = useState(true)
   
+  const [deletingTripId, setDeletingTripId] = useState<number | null>(null)
+
   // Track if we've already fetched to prevent duplicate fetches
   const hasFetchedRef = useRef(false)
 
@@ -49,6 +51,32 @@ export function Dashboard() {
 
   const handleTripClick = (tripSlug: string) => {
     router.push(`/trips/${tripSlug}`)
+  }
+
+  const handleDeleteTrip = async (e: React.MouseEvent, tripId: number, tripSlug: string) => {
+    e.stopPropagation() // Prevent card click navigation
+    
+    if (!confirm('Are you sure you want to delete this trip? This action cannot be undone.')) {
+      return
+    }
+
+    setDeletingTripId(tripId)
+    try {
+      await tripsApi.delete(tripSlug)
+      setTrips(trips.filter(trip => trip.id !== tripId))
+      toast({
+        title: 'Success',
+        description: 'Trip deleted successfully',
+      })
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to delete trip',
+        variant: 'destructive',
+      })
+    } finally {
+      setDeletingTripId(null)
+    }
   }
 
   if (loading) {
@@ -192,6 +220,18 @@ export function Dashboard() {
                       {trip.description}
                     </p>
                   )}
+                  <div className="mt-4 flex justify-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={(e) => handleDeleteTrip(e, trip.id, trip.slug)}
+                      disabled={deletingTripId === trip.id}
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      {deletingTripId === trip.id ? 'Deleting...' : 'Delete'}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}

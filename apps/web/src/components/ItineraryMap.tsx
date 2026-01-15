@@ -7,8 +7,8 @@ import {
   useJsApiLoader,
   Marker,
   Polyline,
-  Autocomplete,
 } from '@react-google-maps/api';
+import { PlaceAutocomplete, PlaceResult } from '@/components/ui/place-autocomplete';
 
 const libraries: ("places")[] = ['places'];
 
@@ -84,34 +84,23 @@ export default function ItineraryMap({ startCityName }: ItineraryMapProps) {
     }
   }, [isLoaded, startCityName, geocodeStartCity]);
 
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
+  const [searchValue, setSearchValue] = useState('');
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
   }, []);
 
-  const onAutocompleteLoad = useCallback(
-    (autocomplete: google.maps.places.Autocomplete) => {
-      autocompleteRef.current = autocomplete;
-    },
-    []
-  );
-
-  const onPlaceChanged = useCallback(() => {
-    if (autocompleteRef.current) {
-      const place = autocompleteRef.current.getPlace();
-      if (place.geometry?.location) {
-        const newCity: City = {
-          id: `city-${Date.now()}`,
-          name: place.formatted_address || place.name || 'Unknown',
-          lat: place.geometry.location.lat(),
-          lng: place.geometry.location.lng(),
-        };
-        setCities((prev) => [...prev, newCity]);
-        setMapCenter({ lat: newCity.lat, lng: newCity.lng });
-      }
-    }
+  const handlePlaceSelect = useCallback((place: PlaceResult) => {
+    const newCity: City = {
+      id: `city-${Date.now()}`,
+      name: place.formattedAddress,
+      lat: place.lat,
+      lng: place.lng,
+    };
+    setCities((prev) => [...prev, newCity]);
+    setMapCenter({ lat: newCity.lat, lng: newCity.lng });
+    setSearchValue('');
   }, []);
 
   const onMapClick = useCallback((e: google.maps.MapMouseEvent) => {
@@ -166,17 +155,13 @@ export default function ItineraryMap({ startCityName }: ItineraryMapProps) {
     <div className="space-y-4">
       {/* Search Input */}
       <div className="flex gap-2">
-        <Autocomplete
-          onLoad={onAutocompleteLoad}
-          onPlaceChanged={onPlaceChanged}
-          options={{ types: ['(cities)'] }}
-        >
-          <input
-            type="text"
-            placeholder="Search for a city to add..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </Autocomplete>
+        <PlaceAutocomplete
+          value={searchValue}
+          onChange={setSearchValue}
+          onPlaceSelect={handlePlaceSelect}
+          placeholder="Search for a city to add..."
+          className="flex-1"
+        />
       </div>
 
       <p className="text-sm text-gray-600">

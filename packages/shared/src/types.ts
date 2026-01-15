@@ -159,6 +159,29 @@ export interface TripExpensesSummary {
   expensesByPayer: Array<{ userId: number; userName: string; total: number }>;
 }
 
+// Destination types
+export interface Destination {
+  id: number;
+  name: string;
+  order: number;
+  arrivalDate?: Date;
+  departureDate?: Date;
+  latitude?: number;
+  longitude?: number;
+  tripId: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateDestinationDto {
+  name: string;
+  order?: number;
+  arrivalDate?: Date;
+  departureDate?: Date;
+  latitude?: number;
+  longitude?: number;
+}
+
 // Trip types
 export enum TripStatus {
   PLANNING = 'planning',
@@ -200,6 +223,7 @@ export interface CreateTripDto {
   budget?: number;
   participants?: string[];
   itinerary?: any[];
+  destinations?: CreateDestinationDto[];
 }
 
 export interface UpdateTripDto {

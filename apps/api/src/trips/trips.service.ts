@@ -31,11 +31,24 @@ export class TripsService {
 
       const savedTrip = await this.tripsRepository.save(trip);
 
+      // Add startCity as the first destination (order: 0)
+      if (tripData.startCity) {
+        const startCityDestination = this.destinationRepository.create({
+          name: tripData.startCity,
+          order: 0,
+          arrivalDate: tripData.startDate,
+          tripId: savedTrip.id,
+        } as Partial<Destination>);
+        await this.destinationRepository.save(startCityDestination);
+      }
+
+      // Add additional destinations with order starting from 1
       if (destinations && destinations.length > 0) {
-        for (const destination of destinations) {
-          const { ...destinationData } = destination;
+        for (let i = 0; i < destinations.length; i++) {
+          const { ...destinationData } = destinations[i];
           const destinationEntity = this.destinationRepository.create({
             ...destinationData,
+            order: destinationData.order ?? i + 1,
             tripId: savedTrip.id,
           } as Partial<Destination>);
           await this.destinationRepository.save(destinationEntity);
