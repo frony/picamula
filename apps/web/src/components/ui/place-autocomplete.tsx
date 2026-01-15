@@ -50,7 +50,7 @@ export function PlaceAutocomplete({
   const onPlaceChanged = useCallback(() => {
     if (autocompleteRef.current) {
       const place = autocompleteRef.current.getPlace();
-      
+
       // Check if place and geometry exist (user selected from dropdown)
       if (!place || !place.geometry || !place.geometry.location) {
         // User pressed enter without selecting - just update the text value
@@ -63,8 +63,8 @@ export function PlaceAutocomplete({
         lng: place.geometry.location.lng(),
         formattedAddress: place.formatted_address || place.name || '',
       };
-      onChange(result.formattedAddress);
-      onPlaceSelect(result);
+      onChange(result.formattedAddress); // Updates the text value
+      onPlaceSelect(result); // Sends full place data (with lat/lng)
     }
   }, [onChange, onPlaceSelect]);
 
@@ -76,7 +76,7 @@ export function PlaceAutocomplete({
         const highlighted = pacContainer.querySelector('.pac-item-selected') as HTMLElement;
         const firstItem = pacContainer.querySelector('.pac-item') as HTMLElement;
         const itemToSelect = highlighted || firstItem;
-        
+
         if (itemToSelect) {
           // Simulate a click on the suggestion to trigger selection
           itemToSelect.click();

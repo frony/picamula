@@ -206,6 +206,7 @@ export interface Trip {
   itinerary?: any[];
   notes?: Note[];
   mediaFiles?: MediaFile[];
+  destinations?: Destination[];
   owner: User;
   ownerId: number;
   createdAt: Date;

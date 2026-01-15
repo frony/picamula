@@ -72,11 +72,14 @@ export class TripsService {
   async findOne(id: number, userId: number): Promise<Trip> {
     const trip = await this.tripsRepository.findOne({
       where: { id },
-      relations: ['owner', 'notes', 'notes.author', 'mediaFiles'],
+      relations: ['owner', 'notes', 'notes.author', 'mediaFiles', 'destinations'],
       order: {
         notes: {
           date: 'DESC',
           createdAt: 'DESC'
+        },
+        destinations: {
+          order: 'ASC'
         }
       }
     });
@@ -96,11 +99,14 @@ export class TripsService {
   async findBySlug(slug: string, userId: number): Promise<Trip> {
     const trip = await this.tripsRepository.findOne({
       where: { slug },
-      relations: ['owner', 'notes', 'notes.author', 'mediaFiles'],
+      relations: ['owner', 'notes', 'notes.author', 'mediaFiles', 'destinations'],
       order: {
         notes: {
           date: 'DESC',
           createdAt: 'DESC'
+        },
+        destinations: {
+          order: 'ASC'
         }
       }
     });
@@ -144,7 +150,7 @@ export class TripsService {
       // Return trip with media files included
       return await this.tripsRepository.findOne({
         where: { id: trip.id },
-        relations: ['owner', 'notes', 'mediaFiles'],
+        relations: ['owner', 'notes', 'mediaFiles', 'destinations'],
       });
     } catch (error) {
       // Rollback transaction on error
@@ -184,7 +190,7 @@ export class TripsService {
       // Return trip with media files included
       return await this.tripsRepository.findOne({
         where: { id: trip.id },
-        relations: ['owner', 'notes', 'mediaFiles'],
+        relations: ['owner', 'notes', 'mediaFiles', 'destinations'],
       });
     } catch (error) {
       // Rollback transaction on error
