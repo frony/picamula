@@ -37,6 +37,7 @@ export function PlaceAutocomplete({
 
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const isSelectingRef = useRef(false);
 
   const onAutocompleteLoad = useCallback(
     (autocomplete: google.maps.places.Autocomplete) => {
@@ -48,6 +49,11 @@ export function PlaceAutocomplete({
   );
 
   const onPlaceChanged = useCallback(() => {
+    // Prevent duplicate triggers
+    if (isSelectingRef.current) {
+      return;
+    }
+
     if (autocompleteRef.current) {
       const place = autocompleteRef.current.getPlace();
 
@@ -57,6 +63,8 @@ export function PlaceAutocomplete({
         return;
       }
 
+      isSelectingRef.current = true;
+
       const result: PlaceResult = {
         name: place.name || '',
         lat: place.geometry.location.lat(),
@@ -65,6 +73,11 @@ export function PlaceAutocomplete({
       };
       onChange(result.formattedAddress); // Updates the text value
       onPlaceSelect(result); // Sends full place data (with lat/lng)
+
+      // Reset the flag after a short delay
+      setTimeout(() => {
+        isSelectingRef.current = false;
+      }, 100);
     }
   }, [onChange, onPlaceSelect]);
 

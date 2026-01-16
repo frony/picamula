@@ -258,7 +258,11 @@ export default function TripDetailsPage() {
           <ItineraryMap 
             startCityName={trip.startCity || trip.destination} 
             destinations={trip.destinations}
-            readOnly={true}
+            readOnly={false}
+            tripId={trip.id}
+            tripStartDate={trip.startDate}
+            tripEndDate={trip.endDate}
+            onDestinationAdded={() => fetchTrip(false)}
           />
         ) : null}
         <div className="mb-6 md:mb-8">

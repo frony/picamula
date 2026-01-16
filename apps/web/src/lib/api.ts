@@ -13,6 +13,8 @@ import type {
   Note,
   CreateNoteDto,
   UpdateNoteDto,
+  Destination,
+  CreateDestinationDto,
 } from '@junta-tribo/shared'
 import type {
   TripExpense,
@@ -220,6 +222,21 @@ export const tripExpensesApi = {
 
   delete: (id: number): Promise<AxiosResponse<void>> =>
     api.delete(`/trip-expenses/${id}`),
+}
+
+// Destinations API
+export const destinationsApi = {
+  getAll: (tripId: number): Promise<AxiosResponse<Destination[]>> =>
+    api.get(`${API_ENDPOINTS.TRIPS.BASE}/${tripId}/destinations`),
+
+  create: (tripId: number, data: CreateDestinationDto): Promise<AxiosResponse<Destination>> =>
+    api.post(`${API_ENDPOINTS.TRIPS.BASE}/${tripId}/destinations`, data),
+
+  update: (tripId: number, destinationId: number, data: Partial<CreateDestinationDto>): Promise<AxiosResponse<Destination>> =>
+    api.patch(`${API_ENDPOINTS.TRIPS.BASE}/${tripId}/destinations/${destinationId}`, data),
+
+  delete: (tripId: number, destinationId: number): Promise<AxiosResponse<void>> =>
+    api.delete(`${API_ENDPOINTS.TRIPS.BASE}/${tripId}/destinations/${destinationId}`),
 }
 
 export default api
