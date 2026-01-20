@@ -65,6 +65,7 @@ export default function ItineraryMap({
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [editingCityId, setEditingCityId] = useState<string | null>(null);
   const [isUpdatingDates, setIsUpdatingDates] = useState(false);
+  const [isDeletingDestination, setIsDeletingDestination] = useState(false);
   const editingDatesRef = useRef<{ arrivalDate: string; departureDate: string } | null>(null);
   const prevDestinationsLengthRef = useRef(destinations.length);
 
@@ -333,6 +334,26 @@ export default function ItineraryMap({
     }
   }, [editingCityId, handleSaveDates]);
 
+  const handleDeleteDestination = useCallback(async (destinationId: number, cityName: string) => {
+    if (!tripId) return;
+    
+    if (!confirm(`Are you sure you want to remove "${cityName}" from the itinerary?`)) {
+      return;
+    }
+
+    setIsDeletingDestination(true);
+    try {
+      await destinationsApi.delete(tripId, destinationId);
+      // Notify parent to refresh data
+      onDestinationAdded?.();
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to delete destination';
+      alert(message);
+    } finally {
+      setIsDeletingDestination(false);
+    }
+  }, [tripId, onDestinationAdded]);
+
   const hasDates = (city: City): boolean => {
     return !!(city.arrivalDate || city.departureDate);
   };
@@ -374,7 +395,7 @@ export default function ItineraryMap({
     return <div className="p-4 text-red-500">Error loading Google Maps</div>;
   }
 
-  if (!isLoaded || isGeocoding || isAddingDestination) {
+  if (!isLoaded || isGeocoding || isAddingDestination || isDeletingDestination) {
     return <div className="p-4">Loading map...</div>;
   }
 
@@ -497,9 +518,21 @@ export default function ItineraryMap({
                           size="sm"
                           onClick={() => handleToggleDates(city, index, defaultArrivalDate, defaultDepartureDate)}
                           className="text-xs"
-                          disabled={isUpdatingDates}
+                          disabled={isUpdatingDates || isDeletingDestination}
                         >
                           {editingCityId === city.id ? 'Save Dates' : hasDates(city) ? 'Edit Dates' : 'Add Dates'}
+                        </Button>
+                      )}
+                      {/* Delete button - only for persisted destinations (not start city) */}
+                      {!readOnly && city.destinationId && index > 0 && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteDestination(city.destinationId!, city.name)}
+                          className="text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
+                          disabled={isUpdatingDates || isDeletingDestination}
+                        >
+                          Delete
                         </Button>
                       )}
                       {/* Remove button - only for non-persisted cities */}

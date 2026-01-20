@@ -154,17 +154,24 @@ export class DestinationService {
   }
 
   async remove(id: number, tripId: number, userId: number): Promise<void> {
-    const destination = await this.destinationRepository.findOne({
-      where: { id, tripId },
-      relations: ['trip'],
+    // Get trip with all destinations
+    const trip = await this.tripRepository.findOne({
+      where: { id: tripId },
+      relations: ['destinations'],
     });
+
+    if (!trip) {
+      throw new NotFoundException(`Trip with ID ${tripId} not found`);
+    }
+
+    if (trip.ownerId !== userId) {
+      throw new ForbiddenException('You do not have access to this trip');
+    }
+
+    const destination = trip.destinations?.find(d => d.id === id);
 
     if (!destination) {
       throw new NotFoundException(`Destination with ID ${id} not found`);
-    }
-
-    if (destination.trip.ownerId !== userId) {
-      throw new ForbiddenException('You do not have access to this destination');
     }
 
     // Don't allow removing the start city (order 0)
@@ -172,6 +179,38 @@ export class DestinationService {
       throw new ForbiddenException('Cannot remove the start city');
     }
 
+    // Sort destinations by order
+    const sortedDestinations = (trip.destinations || []).sort((a, b) => a.order - b.order);
+    const deletedOrder = destination.order;
+    const isLastDestination = deletedOrder === sortedDestinations[sortedDestinations.length - 1].order;
+
+    // Find previous and next destinations
+    const previousDestination = sortedDestinations.find(d => d.order === deletedOrder - 1);
+    const nextDestination = sortedDestinations.find(d => d.order === deletedOrder + 1);
+
+    if (isLastDestination && previousDestination) {
+      // If deleting the last item, set previous item's departure date to deleted item's departure date
+      if (destination.departureDate) {
+        previousDestination.departureDate = destination.departureDate;
+        await this.destinationRepository.save(previousDestination);
+      }
+    } else if (nextDestination && previousDestination) {
+      // If deleting a middle item, set next item's arrival date to previous item's departure date
+      if (previousDestination.departureDate) {
+        nextDestination.arrivalDate = previousDestination.departureDate;
+        await this.destinationRepository.save(nextDestination);
+      }
+    }
+
+    // Remove the destination
     await this.destinationRepository.remove(destination);
+
+    // Reorder remaining destinations
+    for (const dest of sortedDestinations) {
+      if (dest.order > deletedOrder && dest.id !== id) {
+        dest.order = dest.order - 1;
+        await this.destinationRepository.save(dest);
+      }
+    }
   }
 }
