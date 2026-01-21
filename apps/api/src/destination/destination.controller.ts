@@ -16,11 +16,11 @@ import { ActiveUser } from '../iam/decorators/active-user.decorator';
 import { ActiveUserData } from '../iam/interfaces/active-user-data.interface';
 
 @Auth(AuthType.Bearer)
-@Controller('trips/:tripId/destinations')
+@Controller('trips')
 export class DestinationController {
   constructor(private readonly destinationService: DestinationService) {}
 
-  @Post()
+  @Post(':tripId/destinations')
   async create(
     @Param('tripId', ParseIntPipe) tripId: number,
     @Body() createDestinationDto: CreateDestinationDto,
@@ -29,7 +29,7 @@ export class DestinationController {
     return await this.destinationService.create(tripId, createDestinationDto, user.sub);
   }
 
-  @Get()
+  @Get(':tripId/destinations')
   async findAll(
     @Param('tripId', ParseIntPipe) tripId: number,
     @ActiveUser() user: ActiveUserData,
@@ -37,7 +37,15 @@ export class DestinationController {
     return await this.destinationService.findAllByTrip(tripId, user.sub);
   }
 
-  @Patch(':id')
+  @Get('by-slug/:tripSlug/destinations')
+  async findAllBySlug(
+    @Param('tripSlug') tripSlug: string,
+    @ActiveUser() user: ActiveUserData,
+  ) {
+    return await this.destinationService.findAllByTripSlug(tripSlug, user.sub);
+  }
+
+  @Patch(':tripId/destinations/:id')
   async update(
     @Param('tripId', ParseIntPipe) tripId: number,
     @Param('id', ParseIntPipe) id: number,
@@ -47,7 +55,7 @@ export class DestinationController {
     return await this.destinationService.update(id, tripId, updateData, user.sub);
   }
 
-  @Delete(':id')
+  @Delete(':tripId/destinations/:id')
   async remove(
     @Param('tripId', ParseIntPipe) tripId: number,
     @Param('id', ParseIntPipe) id: number,
@@ -56,7 +64,7 @@ export class DestinationController {
     return await this.destinationService.remove(id, tripId, user.sub);
   }
 
-  @Post('reorder')
+  @Post(':tripId/destinations/reorder')
   async reorder(
     @Param('tripId', ParseIntPipe) tripId: number,
     @Body() reorderData: { sourceId: number; targetId: number },

@@ -3,14 +3,22 @@
 import React from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/hooks/use-auth'
-import { notesApi } from '@/lib/api'
+import { notesApi, destinationsApi } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { ArrowLeft, FileText, Calendar } from 'lucide-react'
+import { ArrowLeft, FileText, Calendar, MapPin } from 'lucide-react'
+import type { Destination } from '@junta-tribo/shared'
 
 export default function AddNotePage() {
   const params = useParams<{ id: string }>()
@@ -19,10 +27,31 @@ export default function AddNotePage() {
   const { toast } = useToast()
   const [content, setContent] = React.useState('')
   const [selectedDate, setSelectedDate] = React.useState(new Date().toISOString().split('T')[0])
+  const [selectedDestinationId, setSelectedDestinationId] = React.useState<string>('')
+  const [destinations, setDestinations] = React.useState<Destination[]>([])
+  const [isLoadingDestinations, setIsLoadingDestinations] = React.useState(true)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
 
   // Track if we've already checked auth to prevent duplicate redirects
   const hasCheckedAuthRef = React.useRef(false)
+  const hasFetchedDestinationsRef = React.useRef(false)
+
+  // Fetch destinations for the trip
+  const fetchDestinations = React.useCallback(async () => {
+    if (hasFetchedDestinationsRef.current) return
+    hasFetchedDestinationsRef.current = true
+
+    try {
+      setIsLoadingDestinations(true)
+      const response = await destinationsApi.getAllBySlug(params.id)
+      setDestinations(response.data)
+    } catch (error: any) {
+      console.error('Failed to fetch destinations:', error)
+      // Don't show error toast - destinations are optional
+    } finally {
+      setIsLoadingDestinations(false)
+    }
+  }, [params.id])
 
   // Handle authentication - only check once
   React.useEffect(() => {
@@ -36,8 +65,12 @@ export default function AddNotePage() {
     // Redirect if not authenticated
     if (!user) {
       router.push('/login')
+      return
     }
-  }, [user, authLoading, router])
+
+    // Fetch destinations if authenticated
+    fetchDestinations()
+  }, [user, authLoading, router, fetchDestinations])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,9 +87,18 @@ export default function AddNotePage() {
     setIsSubmitting(true)
 
     try {
-      const noteData = {
+      const noteData: {
+        content: string
+        date: string
+        destinationId?: number
+      } = {
         content: content.trim(),
         date: selectedDate + 'T12:00:00.000Z'
+      }
+
+      // Only include destinationId if a destination is selected
+      if (selectedDestinationId && selectedDestinationId !== 'none') {
+        noteData.destinationId = parseInt(selectedDestinationId)
       }
 
       await notesApi.create(params.id, noteData)
@@ -161,21 +203,52 @@ export default function AddNotePage() {
           </CardHeader>
           <CardContent className="pt-0">
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="noteDate" className="text-sm font-medium">
-                  Note Date *
-                </Label>
-                <Input
-                  id="noteDate"
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full md:w-auto"
-                  required
-                />
-                <p className="text-xs text-gray-500">
-                  Select the date for this note (defaults to today)
-                </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="noteDate" className="text-sm font-medium">
+                    Note Date *
+                  </Label>
+                  <Input
+                    id="noteDate"
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="w-full"
+                    required
+                  />
+                  <p className="text-xs text-gray-500">
+                    Select the date for this note (defaults to today)
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="destination" className="text-sm font-medium flex items-center">
+                    <MapPin className="w-4 h-4 mr-1 text-gray-500" />
+                    Destination (Optional)
+                  </Label>
+                  <Select
+                    value={selectedDestinationId}
+                    onValueChange={setSelectedDestinationId}
+                    disabled={isLoadingDestinations}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder={isLoadingDestinations ? "Loading destinations..." : "Select a destination"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No destination</SelectItem>
+                      {destinations.map((destination) => (
+                        <SelectItem key={destination.id} value={String(destination.id)}>
+                          {destination.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500">
+                    {destinations.length === 0 && !isLoadingDestinations
+                      ? 'No destinations added to this trip yet'
+                      : 'Optionally associate this note with a specific destination'}
+                  </p>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -184,7 +257,7 @@ export default function AddNotePage() {
                 </Label>
                 <Textarea
                   id="content"
-                  placeholder="Write your note here... You can include plans, thoughts, reminders, or any important information about your trip."
+                  placeholder="Write your note here... You can include plans, thoughts, reminders, things you did, things you want to do, places you visited, or any important information about your trip."
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   className="min-h-[200px] resize-y"

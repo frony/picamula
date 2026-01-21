@@ -92,6 +92,26 @@ export class DestinationService {
     });
   }
 
+  async findAllByTripSlug(tripSlug: string, userId: number): Promise<Destination[]> {
+    // Verify trip exists and user owns it
+    const trip = await this.tripRepository.findOne({
+      where: { slug: tripSlug },
+    });
+
+    if (!trip) {
+      throw new NotFoundException(`Trip with slug ${tripSlug} not found`);
+    }
+
+    if (trip.ownerId !== userId) {
+      throw new ForbiddenException('You do not have access to this trip');
+    }
+
+    return await this.destinationRepository.find({
+      where: { tripId: trip.id },
+      order: { order: 'ASC' },
+    });
+  }
+
   async update(id: number, tripId: number, updateData: Partial<CreateDestinationDto>, userId: number): Promise<Destination> {
     // Get trip with all destinations for validation
     const trip = await this.tripRepository.findOne({

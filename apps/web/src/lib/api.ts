@@ -229,6 +229,9 @@ export const destinationsApi = {
   getAll: (tripId: number): Promise<AxiosResponse<Destination[]>> =>
     api.get(`${API_ENDPOINTS.TRIPS.BASE}/${tripId}/destinations`),
 
+  getAllBySlug: (tripSlug: string): Promise<AxiosResponse<Destination[]>> =>
+    api.get(`${API_ENDPOINTS.TRIPS.BASE}/by-slug/${tripSlug}/destinations`),
+
   create: (tripId: number, data: CreateDestinationDto): Promise<AxiosResponse<Destination>> =>
     api.post(`${API_ENDPOINTS.TRIPS.BASE}/${tripId}/destinations`, data),
 

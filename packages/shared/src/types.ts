@@ -6,6 +6,8 @@ export interface Note {
   tripId: number;  // Changed from string to number
   author: User;
   authorId: number;
+  destinationId?: number;
+  destination?: Destination;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -13,11 +15,13 @@ export interface Note {
 export interface CreateNoteDto {
   content: string;
   date: string;
+  destinationId?: number;
 }
 
 export interface UpdateNoteDto {
   content?: string;
   date?: string;
+  destinationId?: number | null;
 }
 
 // Todo Item types

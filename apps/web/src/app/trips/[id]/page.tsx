@@ -480,47 +480,60 @@ export default function TripDetailsPage() {
           <CardContent>
             {trip.notes && trip.notes.length > 0 ? (
               <div className="space-y-4">
-                {trip.notes.map((note) => (
-                  <div key={note.id} className="border-l-4 border-orange-200 pl-4 py-3">
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex flex-col">
-                          <span className="text-xs text-gray-500 font-medium">
-                            {new Date(note.date).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            })}
-                          </span>
-                          <span className="text-xs text-gray-400 mt-1">
-                            by {note.author ? `${note.author.firstName} ${note.author.lastName}` : 'Unknown'}
-                          </span>
-                        </div>
-                        {isOwner && (
-                          <div className="flex items-center space-x-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditNote(note.id)}
-                              className="text-gray-500 hover:text-gray-700"
-                            >
-                              <Edit className="w-3 h-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteNote(note.id)}
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
+                {trip.notes.map((note) => {
+                  // Find the destination name if destinationId exists
+                  const noteDestination = note.destinationId && trip.destinations
+                    ? trip.destinations.find(d => d.id === note.destinationId)
+                    : null;
+                  
+                  return (
+                    <div key={note.id} className="border-l-4 border-orange-200 pl-4 py-3">
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex flex-col">
+                            <span className="text-xs text-gray-500 font-medium">
+                              {new Date(note.date).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              })}
+                            </span>
+                            <span className="text-xs text-gray-400 mt-1">
+                              by {note.author ? `${note.author.firstName} ${note.author.lastName}` : 'Unknown'}
+                            </span>
+                            {noteDestination && (
+                              <span className="text-xs text-blue-600 mt-1 flex items-center">
+                                <MapPin className="w-3 h-3 mr-1" />
+                                {noteDestination.name}
+                              </span>
+                            )}
                           </div>
-                        )}
+                          {isOwner && (
+                            <div className="flex items-center space-x-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditNote(note.id)}
+                                className="text-gray-500 hover:text-gray-700"
+                              >
+                                <Edit className="w-3 h-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteNote(note.id)}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-gray-700 whitespace-pre-wrap">{note.content}</p>
                       </div>
-                      <p className="text-gray-700 whitespace-pre-wrap">{note.content}</p>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">
