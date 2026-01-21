@@ -36,13 +36,19 @@ export class NotesService {
       const arrivalDate = new Date(destination.arrivalDate);
       const departureDate = new Date(destination.departureDate);
       
-      // Normalize dates to compare only date parts (ignore time)
-      const noteDateOnly = new Date(noteDate.getFullYear(), noteDate.getMonth(), noteDate.getDate());
-      const arrivalDateOnly = new Date(arrivalDate.getFullYear(), arrivalDate.getMonth(), arrivalDate.getDate());
-      const departureDateOnly = new Date(departureDate.getFullYear(), departureDate.getMonth(), departureDate.getDate());
+      // Normalize dates to compare only date parts (ignore time) using UTC to avoid timezone issues
+      const noteDateOnly = Date.UTC(noteDate.getUTCFullYear(), noteDate.getUTCMonth(), noteDate.getUTCDate());
+      const arrivalDateOnly = Date.UTC(arrivalDate.getUTCFullYear(), arrivalDate.getUTCMonth(), arrivalDate.getUTCDate());
+      const departureDateOnly = Date.UTC(departureDate.getUTCFullYear(), departureDate.getUTCMonth(), departureDate.getUTCDate());
 
       if (noteDateOnly < arrivalDateOnly || noteDateOnly > departureDateOnly) {
-        const formatDate = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        // Format dates in UTC to avoid timezone conversion
+        const formatDate = (d: Date) => d.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric', 
+          year: 'numeric',
+          timeZone: 'UTC'
+        });
         throw new BadRequestException(
           `Note date must be within the destination dates (${formatDate(arrivalDate)} - ${formatDate(departureDate)})`
         );
