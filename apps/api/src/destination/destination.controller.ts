@@ -55,4 +55,13 @@ export class DestinationController {
   ) {
     return await this.destinationService.remove(id, tripId, user.sub);
   }
+
+  @Post('reorder')
+  async reorder(
+    @Param('tripId', ParseIntPipe) tripId: number,
+    @Body() reorderData: { sourceId: number; targetId: number },
+    @ActiveUser() user: ActiveUserData,
+  ) {
+    return await this.destinationService.reorder(tripId, reorderData.sourceId, reorderData.targetId, user.sub);
+  }
 }

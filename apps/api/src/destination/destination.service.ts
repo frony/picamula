@@ -213,4 +213,59 @@ export class DestinationService {
       }
     }
   }
+
+  async reorder(tripId: number, sourceId: number, targetId: number, userId: number): Promise<Destination[]> {
+    // Get trip with all destinations
+    const trip = await this.tripRepository.findOne({
+      where: { id: tripId },
+      relations: ['destinations'],
+    });
+
+    if (!trip) {
+      throw new NotFoundException(`Trip with ID ${tripId} not found`);
+    }
+
+    if (trip.ownerId !== userId) {
+      throw new ForbiddenException('You do not have access to this trip');
+    }
+
+    const sourceDestination = trip.destinations?.find(d => d.id === sourceId);
+    const targetDestination = trip.destinations?.find(d => d.id === targetId);
+
+    if (!sourceDestination) {
+      throw new NotFoundException(`Source destination with ID ${sourceId} not found`);
+    }
+
+    if (!targetDestination) {
+      throw new NotFoundException(`Target destination with ID ${targetId} not found`);
+    }
+
+    // Don't allow reordering the start city (order 0)
+    if (sourceDestination.order === 0 || targetDestination.order === 0) {
+      throw new ForbiddenException('Cannot reorder the start city');
+    }
+
+    // Swap orders
+    const tempOrder = sourceDestination.order;
+    sourceDestination.order = targetDestination.order;
+    targetDestination.order = tempOrder;
+
+    // Swap arrival and departure dates
+    const tempArrivalDate = sourceDestination.arrivalDate;
+    const tempDepartureDate = sourceDestination.departureDate;
+    sourceDestination.arrivalDate = targetDestination.arrivalDate;
+    sourceDestination.departureDate = targetDestination.departureDate;
+    targetDestination.arrivalDate = tempArrivalDate;
+    targetDestination.departureDate = tempDepartureDate;
+
+    // Save both destinations
+    await this.destinationRepository.save(sourceDestination);
+    await this.destinationRepository.save(targetDestination);
+
+    // Return all destinations sorted by order
+    return await this.destinationRepository.find({
+      where: { tripId },
+      order: { order: 'ASC' },
+    });
+  }
 }

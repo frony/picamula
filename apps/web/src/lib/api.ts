@@ -237,6 +237,9 @@ export const destinationsApi = {
 
   delete: (tripId: number, destinationId: number): Promise<AxiosResponse<void>> =>
     api.delete(`${API_ENDPOINTS.TRIPS.BASE}/${tripId}/destinations/${destinationId}`),
+
+  reorder: (tripId: number, sourceId: number, targetId: number): Promise<AxiosResponse<Destination[]>> =>
+    api.post(`${API_ENDPOINTS.TRIPS.BASE}/${tripId}/destinations/reorder`, { sourceId, targetId }),
 }
 
 export default api

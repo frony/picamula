@@ -66,16 +66,22 @@ export default function ItineraryMap({
   const [editingCityId, setEditingCityId] = useState<string | null>(null);
   const [isUpdatingDates, setIsUpdatingDates] = useState(false);
   const [isDeletingDestination, setIsDeletingDestination] = useState(false);
+  const [isReordering, setIsReordering] = useState(false);
+  const [draggedCityId, setDraggedCityId] = useState<string | null>(null);
+  const [dragOverCityId, setDragOverCityId] = useState<string | null>(null);
   const editingDatesRef = useRef<{ arrivalDate: string; departureDate: string } | null>(null);
-  const prevDestinationsLengthRef = useRef(destinations.length);
+  const prevDestinationsKeyRef = useRef('');
 
-  // Reset when destinations array length changes (new destination added)
+  // Create a key from destinations to detect changes (including reorder)
+  const destinationsKey = destinations.map(d => `${d.id}-${d.order}`).join(',');
+
+  // Reset when destinations change (add, delete, or reorder)
   useEffect(() => {
-    if (destinations.length !== prevDestinationsLengthRef.current) {
-      prevDestinationsLengthRef.current = destinations.length;
+    if (destinationsKey !== prevDestinationsKeyRef.current) {
+      prevDestinationsKeyRef.current = destinationsKey;
       setCities([]);
     }
-  }, [destinations.length]);
+  }, [destinationsKey]);
 
   // Initialize cities from destinations prop
   useEffect(() => {
@@ -366,6 +372,74 @@ export default function ItineraryMap({
     !isNaN(city.lng)
   );
 
+  // Drag and drop handlers
+  const handleDragStart = useCallback((e: React.DragEvent<HTMLLIElement>, city: City, index: number) => {
+    // Don't allow dragging the start city (index 0)
+    if (index === 0) {
+      e.preventDefault();
+      return;
+    }
+    setDraggedCityId(city.id);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', city.id);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLLIElement>, city: City, index: number) => {
+    e.preventDefault();
+    // Don't allow dropping on start city (index 0) or on the same item
+    if (index === 0 || city.id === draggedCityId) {
+      e.dataTransfer.dropEffect = 'none';
+      return;
+    }
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverCityId(city.id);
+  }, [draggedCityId]);
+
+  const handleDragLeave = useCallback(() => {
+    setDragOverCityId(null);
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    setDraggedCityId(null);
+    setDragOverCityId(null);
+  }, []);
+
+  const handleDrop = async (e: React.DragEvent<HTMLLIElement>, targetCity: City, targetIndex: number) => {
+    e.preventDefault();
+    setDragOverCityId(null);
+    
+    // Don't allow dropping on start city (index 0)
+    if (targetIndex === 0 || !tripId) {
+      setDraggedCityId(null);
+      return;
+    }
+
+    const sourceCity = validCities.find(c => c.id === draggedCityId);
+    if (!sourceCity || !sourceCity.destinationId || !targetCity.destinationId) {
+      setDraggedCityId(null);
+      return;
+    }
+
+    // Don't do anything if dropping on same item
+    if (sourceCity.id === targetCity.id) {
+      setDraggedCityId(null);
+      return;
+    }
+
+    setIsReordering(true);
+    try {
+      await destinationsApi.reorder(tripId, sourceCity.destinationId, targetCity.destinationId);
+      // Notify parent to refresh data
+      onDestinationAdded?.();
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to reorder destinations';
+      alert(message);
+    } finally {
+      setIsReordering(false);
+      setDraggedCityId(null);
+    }
+  };
+
   // Get default date for a city based on its position in the list
   const getDefaultDate = (cityIndex: number): string => {
     // For the first city (start city), use trip start date
@@ -395,7 +469,7 @@ export default function ItineraryMap({
     return <div className="p-4 text-red-500">Error loading Google Maps</div>;
   }
 
-  if (!isLoaded || isGeocoding || isAddingDestination || isDeletingDestination) {
+  if (!isLoaded || isGeocoding || isAddingDestination || isDeletingDestination || isReordering) {
     return <div className="p-4">Loading map...</div>;
   }
 
@@ -463,7 +537,12 @@ export default function ItineraryMap({
 
       {/* City List */}
       <div className="space-y-2">
-        <h3 className="font-semibold text-lg">Your Itinerary</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-lg">Your Itinerary</h3>
+          {!readOnly && validCities.length > 1 && (
+            <span className="text-xs text-gray-500">Drag destinations to reorder</span>
+          )}
+        </div>
         {validCities.length === 0 ? (
           <p className="text-sm text-gray-500 italic">No destinations added yet.</p>
         ) : (
@@ -480,13 +559,34 @@ export default function ItineraryMap({
               const minDate = tripStartDate ? new Date(tripStartDate).toISOString().split('T')[0] : undefined;
               const maxDate = tripEndDate ? new Date(tripEndDate).toISOString().split('T')[0] : undefined;
 
+              const isDragging = draggedCityId === city.id;
+              const isDragOver = dragOverCityId === city.id;
+              const canDrag = !readOnly && !!city.destinationId && index > 0;
+
               return (
                 <li
                   key={city.id}
-                  className="p-3 bg-gray-50 rounded-lg"
+                  draggable={canDrag}
+                  onDragStart={(e) => handleDragStart(e, city, index)}
+                  onDragOver={(e) => handleDragOver(e, city, index)}
+                  onDragLeave={handleDragLeave}
+                  onDragEnd={handleDragEnd}
+                  onDrop={(e) => handleDrop(e, city, index)}
+                  className={`p-3 rounded-lg transition-all ${
+                    isDragging 
+                      ? 'opacity-50 bg-blue-100 border-2 border-dashed border-blue-400' 
+                      : isDragOver 
+                        ? 'bg-blue-50 border-2 border-blue-400' 
+                        : 'bg-gray-50'
+                  } ${canDrag ? 'cursor-grab active:cursor-grabbing' : ''}`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
+                      {canDrag && (
+                        <span className="text-gray-400 cursor-grab select-none" title="Drag to reorder">
+                          ⋮⋮
+                        </span>
+                      )}
                       <span className="flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded-full font-bold">
                         {index + 1}
                       </span>
@@ -518,7 +618,7 @@ export default function ItineraryMap({
                           size="sm"
                           onClick={() => handleToggleDates(city, index, defaultArrivalDate, defaultDepartureDate)}
                           className="text-xs"
-                          disabled={isUpdatingDates || isDeletingDestination}
+                          disabled={isUpdatingDates || isDeletingDestination || isReordering}
                         >
                           {editingCityId === city.id ? 'Save Dates' : hasDates(city) ? 'Edit Dates' : 'Add Dates'}
                         </Button>
@@ -530,7 +630,7 @@ export default function ItineraryMap({
                           size="sm"
                           onClick={() => handleDeleteDestination(city.destinationId!, city.name)}
                           className="text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
-                          disabled={isUpdatingDates || isDeletingDestination}
+                          disabled={isUpdatingDates || isDeletingDestination || isReordering}
                         >
                           Delete
                         </Button>
