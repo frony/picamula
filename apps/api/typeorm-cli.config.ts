@@ -23,6 +23,9 @@ import { CreateTripTodoItemsTable1733000000000 } from './src/migrations/17330000
 import { UpdateTripTodoItemsToUserRelation1733100000000 } from './src/migrations/1733100000000-UpdateTripTodoItemsToUserRelation';
 import { CreateTripExpensesTable1733200000000 } from './src/migrations/1733200000000-CreateTripExpensesTable';
 import { CreateDestinationsTable1768369586519 } from './src/migrations/1768369586519-CreateDestinationsTable';
+import { AddBudgetCommentToTrip1768500000000 } from './src/migrations/1768500000000-AddBudgetCommentToTrip';
+import { RemoveBudgetCommentFromTrip1768500050000 } from './src/migrations/1768500050000-RemoveBudgetCommentFromTrip';
+import { AddCommentToTripExpenses1768500100000 } from './src/migrations/1768500100000-AddCommentToTripExpenses';
 
 // Load .env from project root
 config({ path: join(__dirname, '../../../.env') });
@@ -59,6 +62,9 @@ export default new DataSource({
     AddIsVerifiedToUser1759360100000,
     AddStartCityToTrip1734300000000,
     CreateDestinationsTable1768369586519,
+    AddBudgetCommentToTrip1768500000000,
+    RemoveBudgetCommentFromTrip1768500050000,
+    AddCommentToTripExpenses1768500100000,
   ],
   migrationsTableName: 'migrations',
   synchronize: false,

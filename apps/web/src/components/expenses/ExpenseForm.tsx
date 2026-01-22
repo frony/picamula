@@ -34,6 +34,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
     date: new Date().toISOString().split('T')[0],
     type: ExpenseType.OTHER,
     memo: '',
+    comment: null,
     amount: 0,
     tripId,
     paidById: tripOwner.id,
@@ -55,6 +56,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
         date: expense.date.split('T')[0],
         type: expense.type,
         memo: expense.memo,
+        comment: expense.comment || null,
         amount: expense.amount,
         tripId: expense.tripId,
         paidById: expense.paidById,
@@ -121,6 +123,20 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
           required
           maxLength={255}
           placeholder="What was this expense for?"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">Comment (optional)</label>
+        <textarea
+          value={formData.comment || ''}
+          onChange={(e) =>
+            setFormData({ ...formData, comment: e.target.value || null })
+          }
+          className="w-full px-3 py-2 border rounded-md resize-none"
+          maxLength={500}
+          rows={2}
+          placeholder="Any additional notes about this expense..."
         />
       </div>
 

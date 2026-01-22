@@ -131,6 +131,7 @@ export interface TripExpense {
   date: string; // API returns ISO string
   type: ExpenseType;
   memo?: string;
+  comment?: string;
   amount: number;
   tripId: number;
   paidById: number;
@@ -144,6 +145,7 @@ export interface CreateTripExpenseDto {
   date: string; // ISO date string (YYYY-MM-DD)
   type: ExpenseType;
   memo?: string;
+  comment?: string | null;
   amount: number;
   tripId: number;
   paidById: number;
@@ -153,6 +155,7 @@ export interface UpdateTripExpenseDto {
   date?: string; // ISO date string (YYYY-MM-DD)
   type?: ExpenseType;
   memo?: string;
+  comment?: string | null;
   amount?: number;
   paidById?: number;
 }
