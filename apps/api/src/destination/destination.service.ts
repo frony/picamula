@@ -137,24 +137,25 @@ export class DestinationService {
     const tripStartDate = new Date(trip.startDate);
     const tripEndDate = new Date(trip.endDate);
 
-    if (updateData.arrivalDate) {
-      const arrivalDate = new Date(updateData.arrivalDate);
-      if (arrivalDate < tripStartDate || arrivalDate > tripEndDate) {
-        throw new BadRequestException('Arrival date must be within the trip date range');
-      }
+    // Calculate final dates (from update or existing destination)
+    const newArrivalDate = updateData.arrivalDate 
+      ? new Date(updateData.arrivalDate) 
+      : (destination.arrivalDate ? new Date(destination.arrivalDate) : null);
+    const newDepartureDate = updateData.departureDate 
+      ? new Date(updateData.departureDate) 
+      : (destination.departureDate ? new Date(destination.departureDate) : null);
+
+    // Validate arrival date is within trip range
+    if (newArrivalDate && (newArrivalDate < tripStartDate || newArrivalDate > tripEndDate)) {
+      throw new BadRequestException('Arrival date must be within the trip date range');
     }
 
-    if (updateData.departureDate) {
-      const departureDate = new Date(updateData.departureDate);
-      if (departureDate < tripStartDate || departureDate > tripEndDate) {
-        throw new BadRequestException('Departure date must be within the trip date range');
-      }
+    // Validate departure date is within trip range
+    if (newDepartureDate && (newDepartureDate < tripStartDate || newDepartureDate > tripEndDate)) {
+      throw new BadRequestException('Departure date must be within the trip date range');
     }
 
     // Validate departure date is not before arrival date
-    const newArrivalDate = updateData.arrivalDate ? new Date(updateData.arrivalDate) : (destination.arrivalDate ? new Date(destination.arrivalDate) : null);
-    const newDepartureDate = updateData.departureDate ? new Date(updateData.departureDate) : (destination.departureDate ? new Date(destination.departureDate) : null);
-
     if (newArrivalDate && newDepartureDate && newDepartureDate < newArrivalDate) {
       throw new BadRequestException('Departure date cannot be before arrival date');
     }
