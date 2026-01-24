@@ -10,9 +10,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
+import { PlaceAutocomplete, PlaceResult } from '@/components/ui/place-autocomplete'
 import { TripStatus } from '@junta-tribo/shared'
-import type { CreateTripDto } from '@junta-tribo/shared'
-import { X, Plus } from 'lucide-react'
+import type { CreateTripDto, CreateDestinationDto } from '@junta-tribo/shared'
+import { X, Plus, MapPin } from 'lucide-react'
 
 const createTripSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title must be less than 100 characters'),
@@ -52,15 +53,28 @@ export function CreateTripForm({ onSuccess, onCancel }: CreateTripFormProps) {
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [participants, setParticipants] = useState<string[]>([])
+  const [destinations, setDestinations] = useState<CreateDestinationDto[]>([])
+  const [startCityValue, setStartCityValue] = useState('')
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
+    setValue,
   } = useForm<CreateTripFormData>({
     resolver: zodResolver(createTripSchema),
   })
+
+  const handleStartCityChange = (value: string) => {
+    setStartCityValue(value)
+    setValue('startCity', value)
+  }
+
+  const handleStartCitySelect = (place: PlaceResult) => {
+    setStartCityValue(place.formattedAddress)
+    setValue('startCity', place.formattedAddress)
+  }
 
   const addParticipant = () => {
     setParticipants([...participants, ''])
@@ -74,6 +88,37 @@ export function CreateTripForm({ onSuccess, onCancel }: CreateTripFormProps) {
     const updated = [...participants]
     updated[index] = value
     setParticipants(updated)
+  }
+
+  const addDestination = () => {
+    setDestinations([...destinations, { name: '' }])
+  }
+
+  const removeDestination = (index: number) => {
+    setDestinations(destinations.filter((_, i) => i !== index))
+  }
+
+  const updateDestination = (index: number, field: keyof CreateDestinationDto, value: string | number | undefined) => {
+    const updated = [...destinations]
+    if (field === 'arrivalDate' || field === 'departureDate') {
+      updated[index] = { ...updated[index], [field]: value ? new Date(value as string) : undefined }
+    } else if (field === 'latitude' || field === 'longitude') {
+      updated[index] = { ...updated[index], [field]: value as number }
+    } else {
+      updated[index] = { ...updated[index], [field]: value as string }
+    }
+    setDestinations(updated)
+  }
+
+  const handleDestinationPlaceSelect = (index: number, place: PlaceResult) => {
+    const updated = [...destinations]
+    updated[index] = {
+      ...updated[index],
+      name: place.formattedAddress,
+      latitude: place.lat,
+      longitude: place.lng,
+    }
+    setDestinations(updated)
   }
 
   const onSubmit = async (data: CreateTripFormData) => {
@@ -90,6 +135,7 @@ export function CreateTripForm({ onSuccess, onCancel }: CreateTripFormProps) {
         budget: data.budget ? parseFloat(data.budget) : undefined,
         status: TripStatus.PLANNING,
         participants: participants.filter(email => email.trim() !== ''),
+        destinations: destinations.filter(dest => dest.name.trim() !== ''),
       }
 
       await tripsApi.create(tripData)
@@ -101,6 +147,8 @@ export function CreateTripForm({ onSuccess, onCancel }: CreateTripFormProps) {
       
       reset()
       setParticipants([])
+      setDestinations([])
+      setStartCityValue('')
       onSuccess?.()
     } catch (error: any) {
       toast({
@@ -143,12 +191,14 @@ export function CreateTripForm({ onSuccess, onCancel }: CreateTripFormProps) {
 
       <div className="space-y-2">
         <Label htmlFor="startCity" className="text-sm font-medium">Start City *</Label>
-        <Input
-          id="startCity"
+        <PlaceAutocomplete
+          value={startCityValue}
+          onChange={handleStartCityChange}
+          onPlaceSelect={handleStartCitySelect}
           placeholder="e.g., New York, USA"
           className="w-full"
-          {...register('startCity')}
         />
+        <input type="hidden" {...register('startCity')} />
         {errors.startCity && (
           <p className="text-sm text-red-600">{errors.startCity.message}</p>
         )}
@@ -178,6 +228,69 @@ export function CreateTripForm({ onSuccess, onCancel }: CreateTripFormProps) {
           />
           {errors.endDate && (
             <p className="text-sm text-red-600">{errors.endDate.message}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label className="text-sm font-medium">Additional Destinations (optional)</Label>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={addDestination}
+            className="flex items-center gap-1 text-xs"
+          >
+            <MapPin className="h-3 w-3" />
+            Add Destination
+          </Button>
+        </div>
+        <div className="space-y-3">
+          {destinations.map((destination, index) => (
+            <div key={index} className="border rounded-lg p-3 space-y-3 bg-gray-50">
+              <div className="flex gap-2">
+                <PlaceAutocomplete
+                  value={destination.name}
+                  onChange={(value) => updateDestination(index, 'name', value)}
+                  onPlaceSelect={(place) => handleDestinationPlaceSelect(index, place)}
+                  placeholder="e.g., Rome, Italy"
+                  className="flex-1 bg-white"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => removeDestination(index)}
+                  className="px-2"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-500">Arrival Date</Label>
+                  <Input
+                    type="date"
+                    className="bg-white"
+                    value={destination.arrivalDate ? new Date(destination.arrivalDate).toISOString().split('T')[0] : ''}
+                    onChange={(e) => updateDestination(index, 'arrivalDate', e.target.value || undefined)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-500">Departure Date</Label>
+                  <Input
+                    type="date"
+                    className="bg-white"
+                    value={destination.departureDate ? new Date(destination.departureDate).toISOString().split('T')[0] : ''}
+                    onChange={(e) => updateDestination(index, 'departureDate', e.target.value || undefined)}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+          {destinations.length === 0 && (
+            <p className="text-sm text-gray-500 italic">No additional destinations added yet. Click "Add Destination" to add stops to your trip.</p>
           )}
         </div>
       </div>

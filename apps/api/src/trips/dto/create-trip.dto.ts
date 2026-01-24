@@ -9,8 +9,11 @@ import {
   IsArray,
   MaxLength,
   Min,
+  ValidateNested,
 } from 'class-validator';
 import { TripStatus } from '../entities/trip.entity';
+import { CreateDestinationDto } from '../../destination/dto/create-destination.dto';
+import { Type } from 'class-transformer';
 
 export class CreateTripDto {
   @ApiProperty({
@@ -106,4 +109,10 @@ export class CreateTripDto {
   })
   @IsOptional()
   itinerary?: any[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateDestinationDto)
+  @IsOptional()
+  destinations?: CreateDestinationDto[];
 }

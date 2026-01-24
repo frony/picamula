@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan, QueryRunner } from 'typeorm';
 import { Trip } from './entities/trip.entity';
 import { MediaFile } from './entities/media-file.entity';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
+import { Destination } from '../destination/entities/destination.entity';
 
 @Injectable()
 export class TripsService {
@@ -15,14 +16,58 @@ export class TripsService {
     private tripsRepository: Repository<Trip>,
     @InjectRepository(MediaFile)
     private mediaFileRepository: Repository<MediaFile>,
-  ) {}
+    @InjectRepository(Destination)
+    private destinationRepository: Repository<Destination>,
+  ) { }
 
   async create(createTripDto: CreateTripDto, ownerId: number): Promise<Trip> {
-    const trip = this.tripsRepository.create({
-      ...createTripDto,
-      ownerId,
-    });
-    return await this.tripsRepository.save(trip);
+    const { destinations, ...tripData } = createTripDto;
+
+    try {
+      const trip = this.tripsRepository.create({
+        ...tripData,
+        ownerId,
+      } as Partial<Trip>);
+
+      const savedTrip = await this.tripsRepository.save(trip);
+
+      // Add startCity as the first destination (order: 0)
+      // If there are additional destinations, set departure date to first destination's arrival date
+      // Otherwise, set departure date to same as arrival date (trip start date)
+      let startCityDepartureDate: Date = tripData.startDate; // Default to arrival date
+      if (destinations && destinations.length > 0 && destinations[0].arrivalDate) {
+        startCityDepartureDate = destinations[0].arrivalDate;
+      }
+
+      if (tripData.startCity) {
+        const startCityDestination = this.destinationRepository.create({
+          name: tripData.startCity,
+          order: 0,
+          arrivalDate: tripData.startDate,
+          departureDate: startCityDepartureDate,
+          tripId: savedTrip.id,
+        } as Partial<Destination>);
+        await this.destinationRepository.save(startCityDestination);
+      }
+
+      // Add additional destinations with order starting from 1
+      if (destinations && destinations.length > 0) {
+        for (let i = 0; i < destinations.length; i++) {
+          const { ...destinationData } = destinations[i];
+          const destinationEntity = this.destinationRepository.create({
+            ...destinationData,
+            order: destinationData.order ?? i + 1,
+            tripId: savedTrip.id,
+          } as Partial<Destination>);
+          await this.destinationRepository.save(destinationEntity);
+        }
+      }
+
+      return savedTrip;
+    } catch (error) {
+      this.logger.error(`Error creating trip for owner ${ownerId}:`, error);
+      throw new InternalServerErrorException('Failed to create trip');
+    }
   }
 
   async findAll(userId: number): Promise<Trip[]> {
@@ -35,11 +80,14 @@ export class TripsService {
   async findOne(id: number, userId: number): Promise<Trip> {
     const trip = await this.tripsRepository.findOne({
       where: { id },
-      relations: ['owner', 'notes', 'notes.author', 'mediaFiles'],
+      relations: ['owner', 'notes', 'notes.author', 'mediaFiles', 'destinations'],
       order: {
         notes: {
           date: 'DESC',
           createdAt: 'DESC'
+        },
+        destinations: {
+          order: 'ASC'
         }
       }
     });
@@ -59,11 +107,14 @@ export class TripsService {
   async findBySlug(slug: string, userId: number): Promise<Trip> {
     const trip = await this.tripsRepository.findOne({
       where: { slug },
-      relations: ['owner', 'notes', 'notes.author', 'mediaFiles'],
+      relations: ['owner', 'notes', 'notes.author', 'mediaFiles', 'destinations'],
       order: {
         notes: {
           date: 'DESC',
           createdAt: 'DESC'
+        },
+        destinations: {
+          order: 'ASC'
         }
       }
     });
@@ -82,10 +133,10 @@ export class TripsService {
 
   async update(id: number, updateTripDto: UpdateTripDto, userId: number): Promise<Trip> {
     const trip = await this.findOne(id, userId);
-    
+
     // Extract mediaFiles from DTO and handle separately
     const { mediaFiles, ...tripData } = updateTripDto;
-    
+
     // Use transaction to ensure atomicity
     const queryRunner = this.tripsRepository.manager.connection.createQueryRunner();
     await queryRunner.connect();
@@ -107,7 +158,7 @@ export class TripsService {
       // Return trip with media files included
       return await this.tripsRepository.findOne({
         where: { id: trip.id },
-        relations: ['owner', 'notes', 'mediaFiles'],
+        relations: ['owner', 'notes', 'mediaFiles', 'destinations'],
       });
     } catch (error) {
       // Rollback transaction on error
@@ -122,10 +173,10 @@ export class TripsService {
 
   async updateBySlug(slug: string, updateTripDto: UpdateTripDto, userId: number): Promise<Trip> {
     const trip = await this.findBySlug(slug, userId);
-    
+
     // Extract mediaFiles from DTO and handle separately
     const { mediaFiles, ...tripData } = updateTripDto;
-    
+
     // Use transaction to ensure atomicity
     const queryRunner = this.tripsRepository.manager.connection.createQueryRunner();
     await queryRunner.connect();
@@ -147,7 +198,7 @@ export class TripsService {
       // Return trip with media files included
       return await this.tripsRepository.findOne({
         where: { id: trip.id },
-        relations: ['owner', 'notes', 'mediaFiles'],
+        relations: ['owner', 'notes', 'mediaFiles', 'destinations'],
       });
     } catch (error) {
       // Rollback transaction on error
@@ -179,7 +230,7 @@ export class TripsService {
 
   async findUpcoming(userId: number): Promise<Trip[]> {
     return await this.tripsRepository.find({
-      where: { 
+      where: {
         ownerId: userId,
         startDate: MoreThan(new Date())
       },

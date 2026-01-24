@@ -3,15 +3,22 @@
 import React from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/hooks/use-auth'
-import { notesApi } from '@/lib/api'
+import { notesApi, destinationsApi } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { ArrowLeft, FileText, Calendar } from 'lucide-react'
-import type { Note } from '@junta-tribo/shared'
+import { ArrowLeft, FileText, Calendar, MapPin } from 'lucide-react'
+import type { Note, Destination } from '@junta-tribo/shared'
 
 export default function EditNotePage() {
   const params = useParams<{ id: string; noteId: string }>()
@@ -21,6 +28,9 @@ export default function EditNotePage() {
   const [note, setNote] = React.useState<Note | null>(null)
   const [content, setContent] = React.useState('')
   const [selectedDate, setSelectedDate] = React.useState('')
+  const [selectedDestinationId, setSelectedDestinationId] = React.useState<string>('none')
+  const [destinations, setDestinations] = React.useState<Destination[]>([])
+  const [isLoadingDestinations, setIsLoadingDestinations] = React.useState(true)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [loading, setLoading] = React.useState(true)
   const toastRef = React.useRef(toast)
@@ -33,6 +43,19 @@ export default function EditNotePage() {
     toastRef.current = toast
   }, [toast])
 
+  const fetchDestinations = React.useCallback(async () => {
+    try {
+      setIsLoadingDestinations(true)
+      const response = await destinationsApi.getAllBySlug(params.id)
+      setDestinations(response.data)
+    } catch (error: any) {
+      console.error('Failed to fetch destinations:', error)
+      // Don't show error toast - destinations are optional
+    } finally {
+      setIsLoadingDestinations(false)
+    }
+  }, [params.id])
+
   const fetchNote = React.useCallback(async () => {
     try {
       setLoading(true)
@@ -44,6 +67,8 @@ export default function EditNotePage() {
       setContent(noteData.content)
       // Extract just the date part without timezone conversion
       setSelectedDate(String(noteData.date).split('T')[0])
+      // Set destination if exists
+      setSelectedDestinationId(noteData.destinationId ? String(noteData.destinationId) : 'none')
     } catch (error: any) {
       toastRef.current({
         title: 'Error',
@@ -71,9 +96,10 @@ export default function EditNotePage() {
     if (hasFetchedRef.current) return
     hasFetchedRef.current = true
 
-    // Fetch note data if authenticated
+    // Fetch note and destinations in parallel
     fetchNote()
-  }, [user, authLoading, router, fetchNote])
+    fetchDestinations()
+  }, [user, authLoading, router, fetchNote, fetchDestinations])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -90,9 +116,20 @@ export default function EditNotePage() {
     setIsSubmitting(true)
 
     try {
-      const noteData = {
+      const noteData: {
+        content: string
+        date: string
+        destinationId?: number | null
+      } = {
         content: content.trim(),
         date: selectedDate + 'T12:00:00.000Z'
+      }
+
+      // Handle destinationId - include null to remove association
+      if (selectedDestinationId === 'none') {
+        noteData.destinationId = null
+      } else if (selectedDestinationId) {
+        noteData.destinationId = parseInt(selectedDestinationId)
       }
 
       await notesApi.update(params.id, params.noteId, noteData)
@@ -128,7 +165,7 @@ export default function EditNotePage() {
     })
   }
 
-  // Show loading while auth is resolving or data is loading
+  // Show loading while auth is resolving or note is loading
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -218,21 +255,52 @@ export default function EditNotePage() {
           </CardHeader>
           <CardContent className="pt-0">
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="noteDate" className="text-sm font-medium">
-                  Note Date *
-                </Label>
-                <Input
-                  id="noteDate"
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full md:w-auto"
-                  required
-                />
-                <p className="text-xs text-gray-500">
-                  Select the date for this note
-                </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="noteDate" className="text-sm font-medium">
+                    Note Date *
+                  </Label>
+                  <Input
+                    id="noteDate"
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="w-full"
+                    required
+                  />
+                  <p className="text-xs text-gray-500">
+                    Select the date for this note
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="destination" className="text-sm font-medium flex items-center">
+                    <MapPin className="w-4 h-4 mr-1 text-gray-500" />
+                    Destination (Optional)
+                  </Label>
+                  <Select
+                    value={selectedDestinationId}
+                    onValueChange={setSelectedDestinationId}
+                    disabled={isLoadingDestinations}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder={isLoadingDestinations ? "Loading destinations..." : "Select a destination"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No destination</SelectItem>
+                      {destinations.map((destination) => (
+                        <SelectItem key={destination.id} value={String(destination.id)}>
+                          {destination.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500">
+                    {destinations.length === 0 && !isLoadingDestinations
+                      ? 'No destinations added to this trip yet'
+                      : 'Optionally associate this note with a specific destination'}
+                  </p>
+                </div>
               </div>
 
               <div className="space-y-2">

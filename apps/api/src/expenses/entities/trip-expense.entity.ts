@@ -40,6 +40,9 @@ export class TripExpenses {
   @Column()
   memo: string;
 
+  @Column({ type: 'text', nullable: true })
+  comment?: string;
+
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   amount: number;
 

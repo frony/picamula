@@ -10,6 +10,7 @@ import {
 import { Trip } from '../../trips/entities/trip.entity';
 import { User } from '../../users/entities/user.entity';
 import { ApiProperty } from '@nestjs/swagger';
+import type { Destination } from '../../destination/entities/destination.entity';
 
 @Entity('notes')
 export class Note {
@@ -37,9 +38,9 @@ export class Note {
   @ApiProperty({
     description: 'The trip this note belongs to',
   })
-  @ManyToOne(() => Trip, (trip) => trip.notes, { 
+  @ManyToOne(() => Trip, (trip) => trip.notes, {
     onDelete: 'CASCADE',
-    nullable: false 
+    nullable: false
   })
   @JoinColumn({ name: 'tripId' })
   trip: Trip;
@@ -50,15 +51,28 @@ export class Note {
   @ApiProperty({
     description: 'The user who created this note',
   })
-  @ManyToOne(() => User, { 
+  @ManyToOne(() => User, {
     eager: true,
-    nullable: false 
+    nullable: false
   })
   @JoinColumn({ name: 'authorId' })
   author: User;
 
   @Column()
   authorId: number;
+
+  @ApiProperty({
+    description: 'The destination this note belongs to (optional)',
+  })
+  @ManyToOne('Destination', 'notes', {
+    onDelete: 'CASCADE',
+    nullable: true,
+  })
+  @JoinColumn({ name: 'destinationId' })
+  destination?: Destination;
+
+  @Column({ nullable: true })
+  destinationId?: number;
 
   @ApiProperty({
     example: '2024-03-15T10:30:00Z',

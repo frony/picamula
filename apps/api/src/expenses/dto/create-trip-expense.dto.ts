@@ -6,6 +6,8 @@ import {
   Min,
   MaxLength,
   IsInt,
+  IsOptional,
+  ValidateIf,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { ExpenseType } from '../entities/trip-expense.entity';
@@ -26,6 +28,12 @@ export class CreateTripExpenseDto {
   @IsString()
   @MaxLength(255)
   memo: string;
+
+  @ApiProperty({ description: 'Optional comment about the expense', required: false })
+  @ValidateIf((o) => o.comment !== null)
+  @IsString()
+  @MaxLength(500)
+  comment?: string | null;
 
   @ApiProperty({ description: 'Amount of the expense', example: 50.00 })
   @IsNumber()

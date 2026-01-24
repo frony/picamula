@@ -12,6 +12,7 @@ import { RefreshToken } from './src/iam/authentication/entities/refresh-token.en
 import { EmailVerificationToken } from './src/users/entities/email-verification-token.entity';
 import { PasswordResetToken } from './src/iam/authentication/entities/password-reset-token.entity';
 import { EmailConfirmation } from './src/iam/authentication/entities/email-confirmation.entity';
+import { Destination } from './src/destination/entities/destination.entity';
 import { UserReplaceNameByFirstAndLastName1759355264384 } from './src/migrations/1759355264384-UserReplaceNameByFirstAndLastName';
 import { TripAddSlugAndChangeIdToNumber1730568000000 } from './src/migrations/1730568000000-TripAddSlugAndChangeIdToNumber';
 import { CreateMediaFileTable1732406400000 } from './src/migrations/1732406400000-CreateMediaFileTable';
@@ -21,6 +22,10 @@ import { AddStartCityToTrip1734300000000 } from './src/migrations/1734300000000-
 import { CreateTripTodoItemsTable1733000000000 } from './src/migrations/1733000000000-CreateTripTodoItemsTable';
 import { UpdateTripTodoItemsToUserRelation1733100000000 } from './src/migrations/1733100000000-UpdateTripTodoItemsToUserRelation';
 import { CreateTripExpensesTable1733200000000 } from './src/migrations/1733200000000-CreateTripExpensesTable';
+import { CreateDestinationsTable1768369586519 } from './src/migrations/1768369586519-CreateDestinationsTable';
+import { AddBudgetCommentToTrip1768500000000 } from './src/migrations/1768500000000-AddBudgetCommentToTrip';
+import { RemoveBudgetCommentFromTrip1768500050000 } from './src/migrations/1768500050000-RemoveBudgetCommentFromTrip';
+import { AddCommentToTripExpenses1768500100000 } from './src/migrations/1768500100000-AddCommentToTripExpenses';
 
 // Load .env from project root
 config({ path: join(__dirname, '../../../.env') });
@@ -44,6 +49,7 @@ export default new DataSource({
     EmailVerificationToken,
     PasswordResetToken,
     EmailConfirmation,
+    Destination,
   ],
   migrations: [
     TripAddSlugAndChangeIdToNumber1730568000000,
@@ -55,6 +61,10 @@ export default new DataSource({
     CreateEmailVerificationTokenTable1759360000000,
     AddIsVerifiedToUser1759360100000,
     AddStartCityToTrip1734300000000,
+    CreateDestinationsTable1768369586519,
+    AddBudgetCommentToTrip1768500000000,
+    RemoveBudgetCommentFromTrip1768500050000,
+    AddCommentToTripExpenses1768500100000,
   ],
   migrationsTableName: 'migrations',
   synchronize: false,

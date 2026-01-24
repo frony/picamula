@@ -6,6 +6,8 @@ export interface Note {
   tripId: number;  // Changed from string to number
   author: User;
   authorId: number;
+  destinationId?: number;
+  destination?: Destination;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -13,11 +15,13 @@ export interface Note {
 export interface CreateNoteDto {
   content: string;
   date: string;
+  destinationId?: number;
 }
 
 export interface UpdateNoteDto {
   content?: string;
   date?: string;
+  destinationId?: number | null;
 }
 
 // Todo Item types
@@ -127,6 +131,7 @@ export interface TripExpense {
   date: string; // API returns ISO string
   type: ExpenseType;
   memo?: string;
+  comment?: string;
   amount: number;
   tripId: number;
   paidById: number;
@@ -140,6 +145,7 @@ export interface CreateTripExpenseDto {
   date: string; // ISO date string (YYYY-MM-DD)
   type: ExpenseType;
   memo?: string;
+  comment?: string | null;
   amount: number;
   tripId: number;
   paidById: number;
@@ -149,6 +155,7 @@ export interface UpdateTripExpenseDto {
   date?: string; // ISO date string (YYYY-MM-DD)
   type?: ExpenseType;
   memo?: string;
+  comment?: string | null;
   amount?: number;
   paidById?: number;
 }
@@ -157,6 +164,29 @@ export interface TripExpensesSummary {
   totalExpenses: number;
   expensesByType: Record<string, number>;
   expensesByPayer: Array<{ userId: number; userName: string; total: number }>;
+}
+
+// Destination types
+export interface Destination {
+  id: number;
+  name: string;
+  order: number;
+  arrivalDate?: Date;
+  departureDate?: Date;
+  latitude?: number;
+  longitude?: number;
+  tripId: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateDestinationDto {
+  name: string;
+  order?: number;
+  arrivalDate?: Date;
+  departureDate?: Date;
+  latitude?: number;
+  longitude?: number;
 }
 
 // Trip types
@@ -183,6 +213,7 @@ export interface Trip {
   itinerary?: any[];
   notes?: Note[];
   mediaFiles?: MediaFile[];
+  destinations?: Destination[];
   owner: User;
   ownerId: number;
   createdAt: Date;
@@ -200,6 +231,7 @@ export interface CreateTripDto {
   budget?: number;
   participants?: string[];
   itinerary?: any[];
+  destinations?: CreateDestinationDto[];
 }
 
 export interface UpdateTripDto {

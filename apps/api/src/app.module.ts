@@ -19,6 +19,7 @@ import { BackoffStrikeService } from './common/services/backoff-strike.service';
 import { BackoffStrikeController } from './common/controllers/backoff-strike.controller';
 import { ThrottlerExceptionFilter } from './common/filters/throttler-exception.filter';
 import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
+import { DestinationModule } from './destination/destination.module';
 import * as redisStore from 'cache-manager-redis-store';
 import * as path from 'path';
 
@@ -187,6 +188,7 @@ import * as path from 'path';
     NotesModule,
     TripExpensesModule,
     S3Module,
+    DestinationModule,
   ],
   controllers: [BackoffStrikeController],
   providers: [

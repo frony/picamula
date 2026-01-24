@@ -89,6 +89,12 @@ export const ExpenseList: React.FC<ExpenseListProps> = ({
                   <span className="font-medium">Paid by:</span>{' '}
                   {expense.paidBy?.firstName} {expense.paidBy?.lastName}
                 </p>
+                {expense.comment && (
+                  <p>
+                    <span className="font-medium">Comment:</span>{' '}
+                    {expense.comment}
+                  </p>
+                )}
               </div>
             </div>
 

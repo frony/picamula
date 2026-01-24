@@ -16,6 +16,7 @@ export interface TripExpense {
   date: string;
   type: ExpenseType;
   memo?: string;
+  comment?: string;
   amount: number;
   tripId: number;
   paidById: number;
@@ -35,6 +36,7 @@ export interface CreateTripExpenseDto {
   date: string;
   type: ExpenseType;
   memo?: string;
+  comment?: string | null;
   amount: number;
   tripId: number;
   paidById: number;
@@ -45,6 +47,7 @@ export interface UpdateTripExpenseDto {
   date?: string;
   type?: ExpenseType;
   memo?: string;
+  comment?: string | null;
   amount?: number;
   paidById?: number;
 }
