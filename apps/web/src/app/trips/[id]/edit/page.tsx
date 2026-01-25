@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 import type { Trip } from '@junta-tribo/shared'
-import { ArrowLeft, Edit } from 'lucide-react'
+import { ArrowLeft, Edit, MapPin } from 'lucide-react'
+import ItineraryMap from '@/components/ItineraryMap'
 
 export default function EditTripPage() {
   const params = useParams<{ id: string }>()
@@ -34,14 +35,16 @@ export default function EditTripPage() {
     userIdRef.current = user?.id
   }, [user?.id])
 
-  const fetchTrip = React.useCallback(async () => {
+  const fetchTrip = React.useCallback(async (isInitialFetch = false) => {
     try {
-      setLoading(true)
+      if (isInitialFetch) {
+        setLoading(true)
+      }
       const response = await tripsApi.getById(params.id)
       setTrip(response.data)
 
-      // Check if user is the owner (use ref to get latest value)
-      if (response.data.owner.id !== userIdRef.current) {
+      // Check if user is the owner (use ref to get latest value) - only on initial fetch
+      if (isInitialFetch && response.data.owner.id !== userIdRef.current) {
         toastRef.current({
           title: 'Access Denied',
           description: 'You can only edit trips that you own',
@@ -58,7 +61,9 @@ export default function EditTripPage() {
       })
       router.push('/')
     } finally {
-      setLoading(false)
+      if (isInitialFetch) {
+        setLoading(false)
+      }
     }
   }, [params.id, router])
 
@@ -78,7 +83,7 @@ export default function EditTripPage() {
     hasFetchedRef.current = true
 
     // Fetch trip data if authenticated
-    fetchTrip()
+    fetchTrip(true)
   }, [user, authLoading, router, fetchTrip])
 
   const handleSuccess = () => {
@@ -152,7 +157,7 @@ export default function EditTripPage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8">
+      <main className="max-w-6xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8">
         <div className="mb-6 md:mb-8">
           <div className="flex items-center space-x-3 mb-4">
             <div className="p-2 bg-primary/10 rounded-lg">
@@ -167,6 +172,31 @@ export default function EditTripPage() {
           </div>
         </div>
 
+        {/* Itinerary Map - Add/Edit Destinations */}
+        <Card className="shadow-sm mb-6">
+          <CardHeader className="pb-4 md:pb-6">
+            <CardTitle className="text-lg md:text-xl flex items-center">
+              <MapPin className="w-5 h-5 mr-2 text-blue-600" />
+              Destinations
+            </CardTitle>
+            <CardDescription className="text-sm md:text-base">
+              Add, remove, or reorder destinations for your trip. Search for a city or click on the map to add a new destination.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <ItineraryMap 
+              startCityName={trip.startCity || trip.destination} 
+              destinations={trip.destinations}
+              readOnly={false}
+              tripId={trip.id}
+              tripStartDate={trip.startDate}
+              tripEndDate={trip.endDate}
+              onDestinationAdded={() => fetchTrip(false)}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Trip Details Form */}
         <Card className="shadow-sm">
           <CardHeader className="pb-4 md:pb-6">
             <CardTitle className="text-lg md:text-xl">Trip Details</CardTitle>

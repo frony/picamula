@@ -34,16 +34,21 @@ export class TripsService {
       // Add startCity as the first destination (order: 0)
       // If there are additional destinations, set departure date to first destination's arrival date
       // Otherwise, set departure date to same as arrival date (trip start date)
-      let startCityDepartureDate: Date = tripData.startDate; // Default to arrival date
+      // Convert dates to YYYY-MM-DD strings
+      const tripStartDateStr = tripData.startDate instanceof Date 
+        ? tripData.startDate.toISOString().split('T')[0] 
+        : String(tripData.startDate).split('T')[0];
+      
+      let startCityDepartureDate: string = tripStartDateStr; // Default to arrival date
       if (destinations && destinations.length > 0 && destinations[0].arrivalDate) {
-        startCityDepartureDate = destinations[0].arrivalDate;
+        startCityDepartureDate = destinations[0].arrivalDate.split('T')[0];
       }
 
       if (tripData.startCity) {
         const startCityDestination = this.destinationRepository.create({
           name: tripData.startCity,
           order: 0,
-          arrivalDate: tripData.startDate,
+          arrivalDate: tripStartDateStr,
           departureDate: startCityDepartureDate,
           tripId: savedTrip.id,
         } as Partial<Destination>);

@@ -26,14 +26,35 @@ const defaultCenter = {
   lng: -74.006,
 };
 
+// Helper function to format date string (YYYY-MM-DD) for display
+const formatDateDisplay = (date: string | null | undefined): string => {
+  if (!date) return '';
+  
+  // Extract just the date part (YYYY-MM-DD) in case there's a time component
+  const datePart = date.split('T')[0];
+  const [year, month, day] = datePart.split('-').map(Number);
+  
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${months[month - 1]} ${day}, ${year}`;
+};
+
+// Helper function to get date string for input fields
+const getDateInputValue = (date: string | Date | null | undefined): string => {
+  if (!date) return '';
+  
+  // If it's a Date object, convert to ISO string first
+  const dateStr = date instanceof Date ? date.toISOString() : date;
+  return dateStr.split('T')[0];
+};
+
 interface City {
   id: string;
   destinationId?: number;
   name: string;
   lat: number;
   lng: number;
-  arrivalDate?: Date;
-  departureDate?: Date;
+  arrivalDate?: string | null;
+  departureDate?: string | null;
 }
 
 interface ItineraryMapProps {
@@ -230,13 +251,37 @@ export default function ItineraryMap({
 
         if (status === 'OK' && results && results[0]) {
           const addressComponents = results[0].address_components;
-          const cityComponent = addressComponents.find(
-            (component) =>
-              component.types.includes('locality') ||
-              component.types.includes('administrative_area_level_1')
-          );
-          if (cityComponent) {
-            cityName = cityComponent.long_name;
+          
+          // Priority order for finding location name:
+          // 1. locality (city/town)
+          // 2. administrative_area_level_2 (county/district)
+          // 3. administrative_area_level_1 (state/province)
+          // 4. sublocality (neighborhood/district)
+          // 5. country
+          // 6. formatted_address (full address string)
+          const priorityTypes = [
+            'locality',
+            'administrative_area_level_2',
+            'administrative_area_level_1',
+            'sublocality',
+            'sublocality_level_1',
+            'country',
+          ];
+          
+          let foundComponent = null;
+          for (const type of priorityTypes) {
+            foundComponent = addressComponents.find(
+              (component) => component.types.includes(type)
+            );
+            if (foundComponent) break;
+          }
+          
+          if (foundComponent) {
+            cityName = foundComponent.long_name;
+          } else if (results[0].formatted_address) {
+            // Use formatted address as last resort (take first meaningful part)
+            const formattedParts = results[0].formatted_address.split(',');
+            cityName = formattedParts[0].trim() || results[0].formatted_address;
           }
         }
 
@@ -292,12 +337,13 @@ export default function ItineraryMap({
 
     setIsUpdatingDates(true);
     try {
-      const arrivalDate = editingDatesRef.current.arrivalDate ? new Date(editingDatesRef.current.arrivalDate) : undefined;
-      const departureDate = editingDatesRef.current.departureDate ? new Date(editingDatesRef.current.departureDate) : undefined;
+      // Send dates as YYYY-MM-DD strings directly (no Date conversion needed)
+      const arrivalDate = editingDatesRef.current.arrivalDate || undefined;
+      const departureDate = editingDatesRef.current.departureDate || undefined;
 
       await destinationsApi.update(tripId, destinationId, { arrivalDate, departureDate });
 
-      // Update local state
+      // Update local state with string dates
       setCities(prev => prev.map(city =>
         city.id === cityId
           ? { ...city, arrivalDate, departureDate }
@@ -445,22 +491,22 @@ export default function ItineraryMap({
     // For the first city (start city), use trip start date
     if (cityIndex === 0) {
       if (tripStartDate) {
-        return new Date(tripStartDate).toISOString().split('T')[0];
+        return getDateInputValue(tripStartDate);
       }
-      return new Date().toISOString().split('T')[0];
+      return getDateInputValue(new Date());
     }
 
     // For other cities, use the previous city's departure date
     const previousCity = validCities[cityIndex - 1];
     if (previousCity?.departureDate) {
-      return new Date(previousCity.departureDate).toISOString().split('T')[0];
+      return getDateInputValue(previousCity.departureDate);
     }
 
     // Fallback to trip start date or current date
     if (tripStartDate) {
-      return new Date(tripStartDate).toISOString().split('T')[0];
+      return getDateInputValue(tripStartDate);
     }
-    return new Date().toISOString().split('T')[0];
+    return getDateInputValue(new Date());
   };
 
   const polylinePath = validCities.map((city) => ({ lat: city.lat, lng: city.lng }));
@@ -549,15 +595,15 @@ export default function ItineraryMap({
           <ul className="space-y-2">
             {validCities.map((city, index) => {
               const defaultArrivalDate = city.arrivalDate
-                ? new Date(city.arrivalDate).toISOString().split('T')[0]
+                ? getDateInputValue(city.arrivalDate)
                 : getDefaultDate(index);
               const defaultDepartureDate = city.departureDate
-                ? new Date(city.departureDate).toISOString().split('T')[0]
+                ? getDateInputValue(city.departureDate)
                 : defaultArrivalDate; // Default departure to arrival date
 
               // Calculate min/max dates for validation
-              const minDate = tripStartDate ? new Date(tripStartDate).toISOString().split('T')[0] : undefined;
-              const maxDate = tripEndDate ? new Date(tripEndDate).toISOString().split('T')[0] : undefined;
+              const minDate = tripStartDate ? getDateInputValue(tripStartDate) : undefined;
+              const maxDate = tripEndDate ? getDateInputValue(tripEndDate) : undefined;
 
               const isDragging = draggedCityId === city.id;
               const isDragOver = dragOverCityId === city.id;
@@ -595,11 +641,11 @@ export default function ItineraryMap({
                         {editingCityId !== city.id && (city.arrivalDate || city.departureDate) && (
                           <div className="text-xs text-gray-500">
                             {city.arrivalDate && (
-                              <span>Arrive: {new Date(city.arrivalDate).toLocaleDateString()}</span>
+                              <span>Arrive: {formatDateDisplay(city.arrivalDate)}</span>
                             )}
                             {city.arrivalDate && city.departureDate && <span> • </span>}
                             {city.departureDate && (
-                              <span>Depart: {new Date(city.departureDate).toLocaleDateString()}</span>
+                              <span>Depart: {formatDateDisplay(city.departureDate)}</span>
                             )}
                           </div>
                         )}

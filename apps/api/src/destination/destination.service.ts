@@ -133,17 +133,21 @@ export class DestinationService {
       throw new NotFoundException(`Destination with ID ${id} not found`);
     }
 
-    // Validate dates are within trip date range
-    const tripStartDate = new Date(trip.startDate);
-    const tripEndDate = new Date(trip.endDate);
+    // Validate dates are within trip date range - convert Date to string
+    const tripStartDate = trip.startDate instanceof Date 
+      ? trip.startDate.toISOString().split('T')[0] 
+      : String(trip.startDate).split('T')[0];
+    const tripEndDate = trip.endDate instanceof Date 
+      ? trip.endDate.toISOString().split('T')[0] 
+      : String(trip.endDate).split('T')[0];
 
-    // Calculate final dates (from update or existing destination)
+    // Calculate final dates (from update or existing destination) - all as YYYY-MM-DD strings
     const newArrivalDate = updateData.arrivalDate 
-      ? new Date(updateData.arrivalDate) 
-      : (destination.arrivalDate ? new Date(destination.arrivalDate) : null);
+      ? updateData.arrivalDate.split('T')[0]
+      : destination.arrivalDate;
     const newDepartureDate = updateData.departureDate 
-      ? new Date(updateData.departureDate) 
-      : (destination.departureDate ? new Date(destination.departureDate) : null);
+      ? updateData.departureDate.split('T')[0]
+      : destination.departureDate;
 
     // Validate arrival date is within trip range
     if (newArrivalDate && (newArrivalDate < tripStartDate || newArrivalDate > tripEndDate)) {
@@ -165,9 +169,17 @@ export class DestinationService {
     if (destination.order === 1 && updateData.arrivalDate !== undefined) {
       const startCity = trip.destinations?.find(d => d.order === 0);
       if (startCity) {
-        startCity.departureDate = updateData.arrivalDate;
+        startCity.departureDate = updateData.arrivalDate.split('T')[0];
         await this.destinationRepository.save(startCity);
       }
+    }
+
+    // Ensure dates are stored as YYYY-MM-DD strings
+    if (updateData.arrivalDate) {
+      updateData.arrivalDate = updateData.arrivalDate.split('T')[0];
+    }
+    if (updateData.departureDate) {
+      updateData.departureDate = updateData.departureDate.split('T')[0];
     }
 
     Object.assign(destination, updateData);
@@ -266,22 +278,67 @@ export class DestinationService {
       throw new ForbiddenException('Cannot reorder the start city');
     }
 
-    // Swap orders
-    const tempOrder = sourceDestination.order;
-    sourceDestination.order = targetDestination.order;
-    targetDestination.order = tempOrder;
+    const sourceOrder = sourceDestination.order;
+    const targetOrder = targetDestination.order;
 
-    // Swap arrival and departure dates
-    const tempArrivalDate = sourceDestination.arrivalDate;
-    const tempDepartureDate = sourceDestination.departureDate;
-    sourceDestination.arrivalDate = targetDestination.arrivalDate;
-    sourceDestination.departureDate = targetDestination.departureDate;
-    targetDestination.arrivalDate = tempArrivalDate;
-    targetDestination.departureDate = tempDepartureDate;
+    // If source and target are the same, nothing to do
+    if (sourceOrder === targetOrder) {
+      return await this.destinationRepository.find({
+        where: { tripId },
+        order: { order: 'ASC' },
+      });
+    }
 
-    // Save both destinations
-    await this.destinationRepository.save(sourceDestination);
-    await this.destinationRepository.save(targetDestination);
+    // Sort all destinations by order
+    const sortedDestinations = (trip.destinations || []).sort((a, b) => a.order - b.order);
+
+    // Store the original dates by order position (these will stay in place)
+    const datesByOrder: Map<number, { arrivalDate: string | null; departureDate: string | null }> = new Map();
+    for (const dest of sortedDestinations) {
+      datesByOrder.set(dest.order, {
+        arrivalDate: dest.arrivalDate,
+        departureDate: dest.departureDate,
+      });
+    }
+
+    // Update order values
+    if (sourceOrder > targetOrder) {
+      // Moving item UP (e.g., from order 8 to order 4)
+      // Source takes target's position, items between shift down by 1
+      for (const dest of sortedDestinations) {
+        if (dest.id === sourceId) {
+          // Source moves to target position
+          dest.order = targetOrder;
+        } else if (dest.order >= targetOrder && dest.order < sourceOrder) {
+          // Items between target and source shift down by 1
+          dest.order = dest.order + 1;
+        }
+      }
+    } else {
+      // Moving item DOWN (e.g., from order 4 to order 8)
+      // Source takes target's position, items between shift up by 1
+      for (const dest of sortedDestinations) {
+        if (dest.id === sourceId) {
+          // Source moves to target position
+          dest.order = targetOrder;
+        } else if (dest.order > sourceOrder && dest.order <= targetOrder) {
+          // Items between source and target shift up by 1
+          dest.order = dest.order - 1;
+        }
+      }
+    }
+
+    // Now assign dates based on new order positions (dates stay at their positions)
+    for (const dest of sortedDestinations) {
+      const datesForPosition = datesByOrder.get(dest.order);
+      if (datesForPosition) {
+        dest.arrivalDate = datesForPosition.arrivalDate;
+        dest.departureDate = datesForPosition.departureDate;
+      }
+    }
+
+    // Save all affected destinations
+    await this.destinationRepository.save(sortedDestinations);
 
     // Return all destinations sorted by order
     return await this.destinationRepository.find({

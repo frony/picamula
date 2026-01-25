@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsDateString, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, Min } from "class-validator";
+import { IsNotEmpty, IsNumber, IsOptional, IsString, Matches, MaxLength, Min } from "class-validator";
 
 export class CreateDestinationDto {
   @ApiProperty({
@@ -22,22 +22,24 @@ export class CreateDestinationDto {
   order?: number;
 
   @ApiProperty({
-    example: '2024-03-15T10:30:00Z',
-    description: 'Arrival date',
+    example: '2024-03-15',
+    description: 'Arrival date (YYYY-MM-DD format)',
     required: false,
   })
-  @IsDateString()
+  @IsString()
   @IsOptional()
-  arrivalDate?: Date;
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'arrivalDate must be in YYYY-MM-DD format' })
+  arrivalDate?: string;
 
   @ApiProperty({
-    example: '2024-03-15T10:30:00Z',
-    description: 'Departure date',
+    example: '2024-03-15',
+    description: 'Departure date (YYYY-MM-DD format)',
     required: false,
   })
-  @IsDateString()
+  @IsString()
   @IsOptional()
-  departureDate?: Date;
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'departureDate must be in YYYY-MM-DD format' })
+  departureDate?: string;
 
   @ApiProperty({
     example: 48.8566,
