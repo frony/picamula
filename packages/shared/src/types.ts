@@ -171,8 +171,8 @@ export interface Destination {
   id: number;
   name: string;
   order: number;
-  arrivalDate?: Date;
-  departureDate?: Date;
+  arrivalDate?: string | null;  // YYYY-MM-DD format string
+  departureDate?: string | null;  // YYYY-MM-DD format string
   latitude?: number;
   longitude?: number;
   tripId: number;
@@ -183,8 +183,8 @@ export interface Destination {
 export interface CreateDestinationDto {
   name: string;
   order?: number;
-  arrivalDate?: Date;
-  departureDate?: Date;
+  arrivalDate?: string;  // YYYY-MM-DD format string
+  departureDate?: string;  // YYYY-MM-DD format string
   latitude?: number;
   longitude?: number;
 }
