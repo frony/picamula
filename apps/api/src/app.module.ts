@@ -20,6 +20,7 @@ import { BackoffStrikeController } from './common/controllers/backoff-strike.con
 import { ThrottlerExceptionFilter } from './common/filters/throttler-exception.filter';
 import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
 import { DestinationModule } from './destination/destination.module';
+import { GeocodingModule } from './geocoding/geocoding.module';
 import * as redisStore from 'cache-manager-redis-store';
 import * as path from 'path';
 
@@ -189,6 +190,7 @@ import * as path from 'path';
     TripExpensesModule,
     S3Module,
     DestinationModule,
+    GeocodingModule,
   ],
   controllers: [BackoffStrikeController],
   providers: [

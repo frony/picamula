@@ -8,6 +8,7 @@ import { MediaFile } from './entities/media-file.entity';
 import { NotesModule } from '../notes/notes.module';
 import { FileSystemModule } from '../filesystem/filesystem.module';
 import { DestinationModule } from '../destination/destination.module';
+import { GeocodingModule } from '../geocoding/geocoding.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { DestinationModule } from '../destination/destination.module';
     NotesModule,
     FileSystemModule,
     DestinationModule,
+    GeocodingModule,
   ],
   controllers: [TripsController, MediaController],
   providers: [TripsService],

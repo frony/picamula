@@ -1,17 +1,21 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Destination } from './entities/destination.entity';
 import { CreateDestinationDto } from './dto/create-destination.dto';
 import { Trip } from '../trips/entities/trip.entity';
+import { GeocodingService } from '../geocoding/geocoding.service';
 
 @Injectable()
 export class DestinationService {
+  private readonly logger = new Logger(DestinationService.name);
+
   constructor(
     @InjectRepository(Destination)
     private destinationRepository: Repository<Destination>,
     @InjectRepository(Trip)
     private tripRepository: Repository<Trip>,
+    private geocodingService: GeocodingService,
   ) {}
 
   async create(tripId: number, createDestinationDto: CreateDestinationDto, userId: number): Promise<Destination> {
@@ -61,10 +65,31 @@ export class DestinationService {
       }
     }
 
+    // Get coordinates - use provided ones or geocode
+    let latitude = createDestinationDto.latitude;
+    let longitude = createDestinationDto.longitude;
+
+    // If coordinates not provided or are 0, geocode the destination name
+    if ((latitude === undefined || latitude === 0) && (longitude === undefined || longitude === 0)) {
+      this.logger.log(`Geocoding destination "${createDestinationDto.name}"`);
+      const geocodeResult = await this.geocodingService.geocode(createDestinationDto.name);
+      if (geocodeResult) {
+        latitude = geocodeResult.latitude;
+        longitude = geocodeResult.longitude;
+        this.logger.log(`Geocoded "${createDestinationDto.name}" to ${latitude}, ${longitude}`);
+      } else {
+        this.logger.warn(`Failed to geocode "${createDestinationDto.name}", using coordinates (0, 0)`);
+        latitude = 0;
+        longitude = 0;
+      }
+    }
+
     const destination = this.destinationRepository.create({
       ...createDestinationDto,
       arrivalDate,
       departureDate,
+      latitude,
+      longitude,
       order: createDestinationDto.order ?? maxOrder + 1,
       tripId,
     });
