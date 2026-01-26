@@ -16,6 +16,7 @@ import { getSession } from 'next-auth/react'
 import type { UpdateTripDto, Trip } from '@junta-tribo/shared'
 import { X, Plus, Upload, Image as ImageIcon, Video, Loader2 } from 'lucide-react'
 import { useMediaUpload } from '@/hooks/use-media-upload'
+import { PlaceAutocomplete, PlaceResult } from '@/components/ui/place-autocomplete'
 
 const editTripSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title must be less than 100 characters'),
@@ -59,6 +60,10 @@ export function EditTripForm({ trip, onSuccess, onCancel }: EditTripFormProps) {
   const [participants, setParticipants] = useState<string[]>(trip.participants || [])
   const { mediaFiles, isProcessing, addFiles, removeFile } = useMediaUpload()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // Track start city value and coordinates separately
+  const [startCityValue, setStartCityValue] = useState(trip.startCity || '')
+  const [startCityCoordinates, setStartCityCoordinates] = useState<{ lat: number; lng: number } | null>(null)
 
   const {
     register,
@@ -106,6 +111,20 @@ export function EditTripForm({ trip, onSuccess, onCancel }: EditTripFormProps) {
     }
   }
 
+  // Handle start city selection from PlaceAutocomplete
+  const handleStartCityChange = (value: string) => {
+    setStartCityValue(value)
+    setValue('startCity', value)
+    // Clear coordinates when user types manually (they'll be set when a place is selected)
+    setStartCityCoordinates(null)
+  }
+
+  const handleStartCitySelect = (place: PlaceResult) => {
+    setStartCityValue(place.formattedAddress)
+    setValue('startCity', place.formattedAddress)
+    setStartCityCoordinates({ lat: place.lat, lng: place.lng })
+  }
+
   const onSubmit = async (data: EditTripFormData) => {
     setIsSubmitting(true)
 
@@ -120,6 +139,12 @@ export function EditTripForm({ trip, onSuccess, onCancel }: EditTripFormProps) {
         budget: data.budget ? parseFloat(data.budget) : undefined,
         status: data.status,
         participants: participants.filter(email => email.trim() !== ''),
+      }
+
+      // Include coordinates if available (when user selected from autocomplete)
+      if (startCityCoordinates) {
+        tripData.startCityLatitude = startCityCoordinates.lat
+        tripData.startCityLongitude = startCityCoordinates.lng
       }
 
       // Upload media files if any are completed
@@ -251,11 +276,12 @@ export function EditTripForm({ trip, onSuccess, onCancel }: EditTripFormProps) {
 
       <div className="space-y-2">
         <Label htmlFor="startCity" className="text-sm font-medium">Start City *</Label>
-        <Input
-          id="startCity"
+        <PlaceAutocomplete
+          value={startCityValue}
+          onChange={handleStartCityChange}
+          onPlaceSelect={handleStartCitySelect}
           placeholder="e.g., New York, USA"
           className="w-full"
-          {...register('startCity')}
         />
         {errors.startCity && (
           <p className="text-sm text-red-600">{errors.startCity.message}</p>

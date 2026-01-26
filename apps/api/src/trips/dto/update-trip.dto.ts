@@ -56,6 +56,24 @@ export class UpdateTripDto {
   startCity?: string;
 
   @ApiProperty({
+    example: 40.7128,
+    description: 'Latitude of the starting city',
+    required: false,
+  })
+  @IsNumber()
+  @IsOptional()
+  startCityLatitude?: number;
+
+  @ApiProperty({
+    example: -74.006,
+    description: 'Longitude of the starting city',
+    required: false,
+  })
+  @IsNumber()
+  @IsOptional()
+  startCityLongitude?: number;
+
+  @ApiProperty({
     example: '2024-07-01',
     description: 'Trip start date',
     required: false,

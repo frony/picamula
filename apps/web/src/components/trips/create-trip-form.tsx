@@ -55,6 +55,7 @@ export function CreateTripForm({ onSuccess, onCancel }: CreateTripFormProps) {
   const [participants, setParticipants] = useState<string[]>([])
   const [destinations, setDestinations] = useState<CreateDestinationDto[]>([])
   const [startCityValue, setStartCityValue] = useState('')
+  const [startCityCoordinates, setStartCityCoordinates] = useState<{ lat: number; lng: number } | null>(null)
 
   const {
     register,
@@ -69,11 +70,14 @@ export function CreateTripForm({ onSuccess, onCancel }: CreateTripFormProps) {
   const handleStartCityChange = (value: string) => {
     setStartCityValue(value)
     setValue('startCity', value)
+    // Clear coordinates when user types manually
+    setStartCityCoordinates(null)
   }
 
   const handleStartCitySelect = (place: PlaceResult) => {
     setStartCityValue(place.formattedAddress)
     setValue('startCity', place.formattedAddress)
+    setStartCityCoordinates({ lat: place.lat, lng: place.lng })
   }
 
   const addParticipant = () => {
@@ -138,6 +142,12 @@ export function CreateTripForm({ onSuccess, onCancel }: CreateTripFormProps) {
         destinations: destinations.filter(dest => dest.name.trim() !== ''),
       }
 
+      // Include coordinates if available (when user selected from autocomplete)
+      if (startCityCoordinates) {
+        tripData.startCityLatitude = startCityCoordinates.lat
+        tripData.startCityLongitude = startCityCoordinates.lng
+      }
+
       await tripsApi.create(tripData)
       
       toast({
@@ -149,6 +159,7 @@ export function CreateTripForm({ onSuccess, onCancel }: CreateTripFormProps) {
       setParticipants([])
       setDestinations([])
       setStartCityValue('')
+      setStartCityCoordinates(null)
       onSuccess?.()
     } catch (error: any) {
       toast({

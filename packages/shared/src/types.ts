@@ -225,6 +225,8 @@ export interface CreateTripDto {
   description?: string;
   destination: string;
   startCity: string;
+  startCityLatitude?: number;
+  startCityLongitude?: number;
   startDate: Date;
   endDate: Date;
   status?: TripStatus;
@@ -239,6 +241,8 @@ export interface UpdateTripDto {
   description?: string;
   destination?: string;
   startCity?: string;
+  startCityLatitude?: number;
+  startCityLongitude?: number;
   startDate?: Date;
   endDate?: Date;
   status?: TripStatus;
