@@ -36,12 +36,14 @@ const customJestConfig = {
     '!src/**/*.dto.{ts,tsx}',
     '!src/**/*.entity.{ts,tsx}',
   ],
-  coverageDirectory: './coverage',
+  coverageDirectory: '<rootDir>/../../coverage',
   coveragePathIgnorePatterns: [
     '/node_modules/',
     '/.next/',
     '/dist/',
     '/coverage/',
+    '\\.dto\\.(t|j)sx?$',
+    '\\.entity\\.(t|j)sx?$',
   ],
 };
 
