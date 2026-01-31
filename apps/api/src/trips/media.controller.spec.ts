@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { QueryRunner } from 'typeorm';
 import { MediaController } from './media.controller';
 import { FileSystemService } from '../filesystem/filesystem.service';
 import { MediaFile } from './entities/media-file.entity';
@@ -9,17 +10,30 @@ import { Role } from '../users/enums/role.enum';
 describe('MediaController', () => {
   let controller: MediaController;
   let fileSystemService: FileSystemService;
+  let mediaFileRepository: any;
 
   const mockFileSystemService = {
     uploadFile: jest.fn(),
     deleteFile: jest.fn(),
   };
 
+  // Mock QueryRunner
+  const mockQueryRunner: Partial<QueryRunner> = {
+    connect: jest.fn(),
+    startTransaction: jest.fn(),
+    commitTransaction: jest.fn(),
+    rollbackTransaction: jest.fn(),
+    release: jest.fn(),
+    manager: {
+      remove: jest.fn(),
+    } as any,
+  };
+
   const mockMediaFileRepository = {
     findOne: jest.fn(),
     manager: {
       connection: {
-        createQueryRunner: jest.fn(),
+        createQueryRunner: jest.fn(() => mockQueryRunner),
       },
     },
   };
@@ -48,6 +62,7 @@ describe('MediaController', () => {
 
     controller = module.get<MediaController>(MediaController);
     fileSystemService = module.get<FileSystemService>(FileSystemService);
+    mediaFileRepository = module.get(getRepositoryToken(MediaFile));
 
     // Reset mocks
     jest.clearAllMocks();
@@ -214,6 +229,153 @@ describe('MediaController', () => {
       expect(mockFileSystemService.uploadFile).toHaveBeenCalledWith(
         mockImageFile,
         expect.stringMatching(/^trips\/42\/images\//),
+      );
+    });
+  });
+
+  describe('deleteFile', () => {
+    const mockMediaFile = {
+      id: 1,
+      key: 'trips/1/images/123456-test.jpg',
+      url: 'http://localhost:8001/uploads/trips/1/images/123456-test.jpg',
+      tripId: 1,
+      trip: {
+        id: 1,
+        ownerId: 1,
+      },
+    };
+
+    it('should delete a media file successfully', async () => {
+      mockMediaFileRepository.findOne.mockResolvedValue(mockMediaFile);
+      (mockQueryRunner.manager!.remove as jest.Mock).mockResolvedValue(mockMediaFile);
+      mockFileSystemService.deleteFile.mockResolvedValue(undefined);
+
+      const result = await controller.deleteFile(1, 1, mockActiveUser);
+
+      expect(result).toEqual({ message: 'File deleted successfully' });
+      expect(mockMediaFileRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 1, tripId: 1 },
+        relations: ['trip'],
+      });
+      expect(mockQueryRunner.connect).toHaveBeenCalled();
+      expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.manager!.remove).toHaveBeenCalledWith(MediaFile, mockMediaFile);
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockFileSystemService.deleteFile).toHaveBeenCalledWith(mockMediaFile.key);
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException when media file is not found', async () => {
+      mockMediaFileRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        controller.deleteFile(1, 999, mockActiveUser),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        controller.deleteFile(1, 999, mockActiveUser),
+      ).rejects.toThrow('Media file not found');
+
+      expect(mockQueryRunner.connect).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException when user does not own the trip', async () => {
+      const mediaFileOwnedByOther = {
+        ...mockMediaFile,
+        trip: {
+          id: 1,
+          ownerId: 999, // Different owner
+        },
+      };
+      mockMediaFileRepository.findOne.mockResolvedValue(mediaFileOwnedByOther);
+
+      await expect(
+        controller.deleteFile(1, 1, mockActiveUser),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        controller.deleteFile(1, 1, mockActiveUser),
+      ).rejects.toThrow('You do not have permission to delete this file');
+
+      expect(mockQueryRunner.connect).not.toHaveBeenCalled();
+    });
+
+    it('should still succeed when filesystem deletion fails', async () => {
+      mockMediaFileRepository.findOne.mockResolvedValue(mockMediaFile);
+      (mockQueryRunner.manager!.remove as jest.Mock).mockResolvedValue(mockMediaFile);
+      mockFileSystemService.deleteFile.mockRejectedValue(new Error('Filesystem error'));
+
+      // Spy on console.error to verify it's called
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      const result = await controller.deleteFile(1, 1, mockActiveUser);
+
+      expect(result).toEqual({ message: 'File deleted successfully' });
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to delete file'),
+        expect.any(Error),
+      );
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should rollback transaction when database removal fails', async () => {
+      mockMediaFileRepository.findOne.mockResolvedValue(mockMediaFile);
+      (mockQueryRunner.manager!.remove as jest.Mock).mockRejectedValue(
+        new Error('Database error'),
+      );
+
+      await expect(
+        controller.deleteFile(1, 1, mockActiveUser),
+      ).rejects.toThrow('Database error');
+
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+      expect(mockFileSystemService.deleteFile).not.toHaveBeenCalled();
+    });
+
+    it('should rollback transaction when commit fails', async () => {
+      mockMediaFileRepository.findOne.mockResolvedValue(mockMediaFile);
+      (mockQueryRunner.manager!.remove as jest.Mock).mockResolvedValue(mockMediaFile);
+      (mockQueryRunner.commitTransaction as jest.Mock).mockRejectedValue(
+        new Error('Commit failed'),
+      );
+
+      await expect(
+        controller.deleteFile(1, 1, mockActiveUser),
+      ).rejects.toThrow('Commit failed');
+
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+      expect(mockFileSystemService.deleteFile).not.toHaveBeenCalled();
+    });
+
+    it('should release query runner even when an error occurs', async () => {
+      mockMediaFileRepository.findOne.mockResolvedValue(mockMediaFile);
+      (mockQueryRunner.manager!.remove as jest.Mock).mockRejectedValue(
+        new Error('Some error'),
+      );
+
+      await expect(
+        controller.deleteFile(1, 1, mockActiveUser),
+      ).rejects.toThrow();
+
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+    });
+
+    it('should use the correct file key for filesystem deletion', async () => {
+      const mediaFileWithSpecificKey = {
+        ...mockMediaFile,
+        key: 'trips/42/videos/unique-video-key.mp4',
+      };
+      mockMediaFileRepository.findOne.mockResolvedValue(mediaFileWithSpecificKey);
+      (mockQueryRunner.manager!.remove as jest.Mock).mockResolvedValue(mediaFileWithSpecificKey);
+      mockFileSystemService.deleteFile.mockResolvedValue(undefined);
+
+      await controller.deleteFile(42, 1, mockActiveUser);
+
+      expect(mockFileSystemService.deleteFile).toHaveBeenCalledWith(
+        'trips/42/videos/unique-video-key.mp4',
       );
     });
   });
