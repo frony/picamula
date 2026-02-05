@@ -252,55 +252,64 @@ export default function TripDetailsPage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8">
-        {/* Itinerary Map */}
-        {(trip.destinations && trip.destinations.length > 0) || trip.startCity || trip.destination ? (
-          <ItineraryMap 
-            startCityName={trip.startCity || trip.destination} 
-            destinations={trip.destinations}
-            readOnly={false}
-            tripId={trip.id}
-            tripStartDate={trip.startDate}
-            tripEndDate={trip.endDate}
-            onDestinationAdded={() => fetchTrip(false)}
-          />
-        ) : null}
-        <div className="mb-6 md:mb-8">
-          <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl md:text-4xl font-bold text-gray-900">{trip.title}</h1>
-                <Badge variant="secondary" className={`${getStatusColor(trip.status)} border`}>
-                  {TRIP_STATUS_LABELS[trip.status]}
-                </Badge>
-              </div>
-              <div className="flex items-center text-gray-600 mb-2">
-                <MapPin className="w-5 h-5 mr-2" />
-                <span className="text-lg">{trip.destination}</span>
-              </div>
-              {trip.startCity && (
-                <div className="flex items-center text-gray-500 mb-2 ml-7">
-                  <span className="text-sm">From: {trip.startCity}</span>
+      <main className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8">
+        {/* Desktop: Two-column layout | Mobile/Tablet: Stacked layout */}
+        <div className="flex flex-col lg:flex-row lg:gap-8">
+          {/* Left Column - Main Content */}
+          <div className="flex-1 lg:max-w-[calc(100%-400px-2rem)]">
+            {/* Trip Header Info */}
+            <div className="mb-6 md:mb-8">
+              <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h1 className="text-3xl md:text-4xl font-bold text-gray-900">{trip.title}</h1>
+                    <Badge variant="secondary" className={`${getStatusColor(trip.status)} border`}>
+                      {TRIP_STATUS_LABELS[trip.status]}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center text-gray-600 mb-2">
+                    <MapPin className="w-5 h-5 mr-2" />
+                    <span className="text-lg">{trip.destination}</span>
+                  </div>
+                  {trip.startCity && (
+                    <div className="flex items-center text-gray-500 mb-2 ml-7">
+                      <span className="text-sm">From: {trip.startCity}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center text-gray-600">
+                    <User className="w-4 h-4 mr-2" />
+                    <span className="text-sm">Created by {trip.owner.firstName} {trip.owner.lastName}</span>
+                  </div>
                 </div>
-              )}
-              <div className="flex items-center text-gray-600">
-                <User className="w-4 h-4 mr-2" />
-                <span className="text-sm">Created by {trip.owner.firstName} {trip.owner.lastName}</span>
               </div>
             </div>
-          </div>
 
-          {trip.description && (
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle className="text-lg">Description</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-700 whitespace-pre-wrap">{trip.description}</p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+            {/* Itinerary Map - Mobile/Tablet only */}
+            <div className="lg:hidden mb-6">
+              {(trip.destinations && trip.destinations.length > 0) || trip.startCity || trip.destination ? (
+                <ItineraryMap 
+                  startCityName={trip.startCity || trip.destination} 
+                  destinations={trip.destinations}
+                  readOnly={false}
+                  tripId={trip.id}
+                  tripStartDate={trip.startDate}
+                  tripEndDate={trip.endDate}
+                  onDestinationAdded={() => fetchTrip(false)}
+                />
+              ) : null}
+            </div>
+
+            {/* Description */}
+            {trip.description && (
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle className="text-lg">Description</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-700 whitespace-pre-wrap">{trip.description}</p>
+                </CardContent>
+              </Card>
+            )}
 
         {/* Trip Details Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -544,6 +553,25 @@ export default function TripDetailsPage() {
             )}
           </CardContent>
         </Card>
+          </div>
+
+          {/* Right Column - Map (Desktop only) */}
+          <div className="hidden lg:block lg:w-[400px] lg:flex-shrink-0">
+            <div className="sticky top-6">
+              {(trip.destinations && trip.destinations.length > 0) || trip.startCity || trip.destination ? (
+                <ItineraryMap 
+                  startCityName={trip.startCity || trip.destination} 
+                  destinations={trip.destinations}
+                  readOnly={false}
+                  tripId={trip.id}
+                  tripStartDate={trip.startDate}
+                  tripEndDate={trip.endDate}
+                  onDestinationAdded={() => fetchTrip(false)}
+                />
+              ) : null}
+            </div>
+          </div>
+        </div>
       </main>
     </div>
   )

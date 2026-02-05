@@ -157,57 +157,94 @@ export default function EditTripPage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8">
-        <div className="mb-6 md:mb-8">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Edit className="w-6 h-6 text-primary" />
+      <main className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8">
+        {/* Desktop: Two-column layout | Mobile/Tablet: Stacked layout */}
+        <div className="flex flex-col lg:flex-row lg:gap-8">
+          {/* Left Column - Main Content */}
+          <div className="flex-1 lg:max-w-[calc(100%-400px-2rem)]">
+            {/* Page Header */}
+            <div className="mb-6 md:mb-8">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Edit className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Edit Trip</h2>
+                  <p className="text-gray-600 text-sm md:text-base mt-1">
+                    Update your trip details: {trip.title}
+                  </p>
+                </div>
+              </div>
             </div>
-            <div>
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Edit Trip</h2>
-              <p className="text-gray-600 text-sm md:text-base mt-1">
-                Update your trip details: {trip.title}
-              </p>
+
+            {/* Itinerary Map - Mobile/Tablet only */}
+            <div className="lg:hidden mb-6">
+              <Card className="shadow-sm">
+                <CardHeader className="pb-4 md:pb-6">
+                  <CardTitle className="text-lg md:text-xl flex items-center">
+                    <MapPin className="w-5 h-5 mr-2 text-blue-600" />
+                    Destinations
+                  </CardTitle>
+                  <CardDescription className="text-sm md:text-base">
+                    Add, remove, or reorder destinations for your trip. Search for a city or click on the map to add a new destination.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <ItineraryMap 
+                    startCityName={trip.startCity || trip.destination} 
+                    destinations={trip.destinations}
+                    readOnly={false}
+                    tripId={trip.id}
+                    tripStartDate={trip.startDate}
+                    tripEndDate={trip.endDate}
+                    onDestinationAdded={() => fetchTrip(false)}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Trip Details Form */}
+            <Card className="shadow-sm">
+              <CardHeader className="pb-4 md:pb-6">
+                <CardTitle className="text-lg md:text-xl">Trip Details</CardTitle>
+                <CardDescription className="text-sm md:text-base">
+                  Update the information below to modify your trip. All required fields are marked with an asterisk (*).
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <EditTripForm trip={trip} onSuccess={handleSuccess} onCancel={handleCancel} />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column - Map (Desktop only) */}
+          <div className="hidden lg:block lg:w-[400px] lg:flex-shrink-0">
+            <div className="sticky top-6">
+              <Card className="shadow-sm">
+                <CardHeader className="pb-4 md:pb-6">
+                  <CardTitle className="text-lg md:text-xl flex items-center">
+                    <MapPin className="w-5 h-5 mr-2 text-blue-600" />
+                    Destinations
+                  </CardTitle>
+                  <CardDescription className="text-sm md:text-base">
+                    Add, remove, or reorder destinations for your trip. Search for a city or click on the map to add a new destination.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <ItineraryMap 
+                    startCityName={trip.startCity || trip.destination} 
+                    destinations={trip.destinations}
+                    readOnly={false}
+                    tripId={trip.id}
+                    tripStartDate={trip.startDate}
+                    tripEndDate={trip.endDate}
+                    onDestinationAdded={() => fetchTrip(false)}
+                  />
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
-
-        {/* Itinerary Map - Add/Edit Destinations */}
-        <Card className="shadow-sm mb-6">
-          <CardHeader className="pb-4 md:pb-6">
-            <CardTitle className="text-lg md:text-xl flex items-center">
-              <MapPin className="w-5 h-5 mr-2 text-blue-600" />
-              Destinations
-            </CardTitle>
-            <CardDescription className="text-sm md:text-base">
-              Add, remove, or reorder destinations for your trip. Search for a city or click on the map to add a new destination.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <ItineraryMap 
-              startCityName={trip.startCity || trip.destination} 
-              destinations={trip.destinations}
-              readOnly={false}
-              tripId={trip.id}
-              tripStartDate={trip.startDate}
-              tripEndDate={trip.endDate}
-              onDestinationAdded={() => fetchTrip(false)}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Trip Details Form */}
-        <Card className="shadow-sm">
-          <CardHeader className="pb-4 md:pb-6">
-            <CardTitle className="text-lg md:text-xl">Trip Details</CardTitle>
-            <CardDescription className="text-sm md:text-base">
-              Update the information below to modify your trip. All required fields are marked with an asterisk (*).
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <EditTripForm trip={trip} onSuccess={handleSuccess} onCancel={handleCancel} />
-          </CardContent>
-        </Card>
       </main>
     </div>
   )
