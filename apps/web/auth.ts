@@ -35,7 +35,9 @@ interface JWTPayload {
   [key: string]: any;
 }
 
-const ttl = parseInt(process.env.JWT_ACCESS_TOKEN_TTL ?? '3600', 10);
+// Use separate TTLs for access and refresh tokens
+const accessTokenTtl = parseInt(process.env.JWT_ACCESS_TOKEN_TTL ?? '3600', 10);
+const refreshTokenTtl = parseInt(process.env.JWT_REFRESH_TOKEN_TTL ?? '86400', 10);
 
 export const {
   handlers,
@@ -84,48 +86,56 @@ export const {
         return token;
       }
       
-      // Check if token is still valid
-      if (token.exp && typeof token.exp === 'number' && Date.now() < token.exp * 1000) {
-        // Token is still valid
+      // Check if token needs refresh (with 5-minute buffer before expiry)
+      const REFRESH_BUFFER = 5 * 60 * 1000; // 5 minutes in milliseconds
+      const shouldRefresh = !token.exp || (Date.now() >= (token.exp * 1000) - REFRESH_BUFFER);
+      
+      if (!shouldRefresh) {
+        // Token is still valid and not near expiry
         return token;
       }
       
-      // Token expired, try to refresh
+      // Token expired or about to expire, try to refresh
       try {
-        console.log('Token expired, attempting refresh...');
+        console.log('Token expiring soon, attempting refresh...');
         const responseTokens = await apiClient.post<{ accessToken: string; refreshToken?: string }>(
           "/authentication/refresh-tokens", 
           { refreshToken: token.refreshToken },
           { skipAuth: true }
         );
         
-        const accessToken = responseTokens.accessToken;
-        
-        if (!accessToken) {
-          throw new Error('No access token in refresh response');
+        if (!responseTokens || !responseTokens.accessToken) {
+          console.error('Refresh failed: No access token in response');
+          return {}; // Clear token to force re-login
         }
 
+        const accessToken = responseTokens.accessToken;
         const tokenDecoded = jwtDecode<JWTPayload>(accessToken);
-        if (tokenDecoded) {
-          token.sub = tokenDecoded.sub;
-          token.email = tokenDecoded.email;
-          token.name = tokenDecoded.name;
-          token.role = tokenDecoded.role;
-          token.iat = tokenDecoded.iat;
-          token.exp = tokenDecoded.exp;
-          token.permissions = tokenDecoded.permissions;
-          token.accessToken = accessToken;
-          if (responseTokens.refreshToken) {
-            token.refreshToken = responseTokens.refreshToken;
-          }
+        
+        if (!tokenDecoded) {
+          console.error('Failed to decode refreshed token');
+          return {};
+        }
+
+        token.sub = tokenDecoded.sub;
+        token.email = tokenDecoded.email;
+        token.name = tokenDecoded.name;
+        token.role = tokenDecoded.role;
+        token.iat = tokenDecoded.iat;
+        token.exp = tokenDecoded.exp;
+        token.permissions = tokenDecoded.permissions;
+        token.accessToken = accessToken;
+        
+        // Update refresh token if provided
+        if (responseTokens.refreshToken) {
+          token.refreshToken = responseTokens.refreshToken;
         }
         
-        console.log('Token refreshed successfully');
+        console.log('Token refreshed successfully, expires:', new Date(tokenDecoded.exp * 1000));
         return token;
       } catch (error) {
         console.error('Token refresh failed:', error);
-        // If refresh fails, clear the token
-        return {};
+        return {}; // Clear token to force re-login
       }
     },
     async session({ token, session }) {
@@ -144,11 +154,11 @@ export const {
   },
   session: {
     strategy: "jwt",
-    maxAge: ttl,
-    updateAge: ttl,
+    maxAge: refreshTokenTtl, // Session lasts as long as refresh token (24 hours)
+    updateAge: Math.floor(accessTokenTtl / 2), // Check and refresh every 30 minutes (half of access token TTL)
   },
   jwt: {
-    maxAge: ttl,
+    maxAge: refreshTokenTtl, // JWT cookie lasts as long as refresh token
   },
   ...authConfig
 });

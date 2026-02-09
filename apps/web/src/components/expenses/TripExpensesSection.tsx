@@ -228,7 +228,7 @@ export const TripExpensesSection: React.FC<TripExpensesSectionProps> = ({
         )}
 
         {/* Tabs for List and Summary */}
-        <Tabs defaultValue="list" className="w-full">
+        <Tabs defaultValue="summary" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="list">Expenses List</TabsTrigger>
             <TabsTrigger value="summary">Summary</TabsTrigger>
