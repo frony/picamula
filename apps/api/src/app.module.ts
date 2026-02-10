@@ -21,8 +21,11 @@ import { ThrottlerExceptionFilter } from './common/filters/throttler-exception.f
 import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
 import { DestinationModule } from './destination/destination.module';
 import { GeocodingModule } from './geocoding/geocoding.module';
+import { CustomCacheModule } from './cache/cache.module';
 import * as redisStore from 'cache-manager-redis-store';
 import * as path from 'path';
+import Keyv from 'keyv';
+import KeyvRedis from '@keyv/redis';
 
 @Module({
   imports: [
@@ -78,41 +81,29 @@ import * as path from 'path';
     CacheModule.registerAsync({
       isGlobal: true,
       imports: [ConfigModule],
-      inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        const redisHost = configService.get('REDIS_HOST', 'localhost');
-        const redisPort = configService.get('REDIS_PORT', '6379');
-        const redisPassword = configService.get('REDIS_PASSWORD');
+        const host = configService.get('REDIS_HOST');
+        const port = configService.get('REDIS_PORT');
+        const password = configService.get('REDIS_PASSWORD');
 
-        console.log('=== REDIS CONNECTION DEBUG ===');
-        console.log('ConfigService REDIS_HOST:', redisHost);
-        console.log('ConfigService REDIS_PORT:', redisPort);
-        console.log('Parsed REDIS_PORT:', parseInt(redisPort, 10));
-        console.log('==============================');
+        const redisUrl = password
+          ? `redis://:${password}@${host}:${port}`
+          : `redis://${host}:${port}`;
 
         return {
-          ttl: 60 * 60 * 2 * 1000, // 2 hours
-          max: 10, // maximum number of items in cache
-          store: redisStore,
-          host: redisHost,
-          port: parseInt(redisPort, 10),
-          password: redisPassword,
+          stores: [
+            new Keyv({
+              store: new KeyvRedis(redisUrl),
+            }),
+          ],
         };
       },
+      inject: [ConfigService],
     }),
     MailerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        // Debug email configuration
-        console.log('=== EMAIL CONFIGURATION DEBUG ===');
-        console.log('ConfigService EMAIL_HOST:', configService.get<string>('EMAIL_HOST'));
-        console.log('ConfigService EMAIL_PORT:', configService.get<string>('EMAIL_PORT'));
-        console.log('ConfigService EMAIL_USERNAME:', configService.get<string>('EMAIL_USERNAME'));
-        console.log('Direct process.env.EMAIL_HOST:', process.env.EMAIL_HOST);
-        console.log('Direct process.env.EMAIL_PORT:', process.env.EMAIL_PORT);
-        console.log('Direct process.env.EMAIL_USERNAME:', process.env.EMAIL_USERNAME);
-        console.log('==================================');
 
         // Use direct env vars as fallback
         const emailHost = configService.get<string>('EMAIL_HOST') || process.env.EMAIL_HOST;
@@ -191,6 +182,7 @@ import * as path from 'path';
     S3Module,
     DestinationModule,
     GeocodingModule,
+    CustomCacheModule,
   ],
   controllers: [BackoffStrikeController],
   providers: [

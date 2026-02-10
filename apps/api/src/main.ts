@@ -12,7 +12,7 @@ async function bootstrap() {
 
   // Serve static files from uploads directory
   const uploadDir = process.env.UPLOAD_DIR;
-  
+
   if (!uploadDir) {
     console.error('❌ ERROR: UPLOAD_DIR environment variable is not set!');
     console.error('Please set UPLOAD_DIR in your .env file:');
@@ -20,7 +20,7 @@ async function bootstrap() {
     console.error('  Production: UPLOAD_DIR=/var/www/juntatribo/uploads');
     process.exit(1);
   }
-  
+
   app.useStaticAssets(uploadDir, {
     prefix: '/uploads',
   });
@@ -83,10 +83,10 @@ async function bootstrap() {
     SwaggerModule.setup('api/docs', app, document);
   }
 
-  const port = process.env.PORT || 3001;
+  const port = process.env.PORT || 8001;
   await app.listen(port);
   console.log(`🚀 API running on http://localhost:${port}`);
-  
+
   if (process.env.NODE_ENV !== 'production') {
     console.log(`📚 Swagger docs available at http://localhost:${port}/api/docs`);
     console.log(`🔐 Use credentials: ${process.env.SWAGGER_USER || 'admin'} / ${process.env.SWAGGER_PASSWORD || 'password'}`);
