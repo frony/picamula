@@ -7,8 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
+import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 import { ConfigService } from '@nestjs/config';
 import { getClientIp, normalizeIp } from '../utils';
 
@@ -20,7 +19,7 @@ export class IpBackoffMiddleware implements NestMiddleware {
   private readonly MAX_BACKOFFS: number = 3; // Number of backoffs before permanent block
   private readonly logger = new Logger(IpBackoffMiddleware.name);
   private readonly WHITELISTED_IPS: string[] = [];
-  
+
   // Stricter limits for authentication routes
   private readonly AUTH_MAX_REQUESTS: number;
   private readonly AUTH_WINDOW_SIZE_MS: number;
@@ -82,7 +81,7 @@ export class IpBackoffMiddleware implements NestMiddleware {
       '/login',
       '/register',
     ];
-    
+
     return authPaths.some(authPath => path.toLowerCase().includes(authPath.toLowerCase()));
   }
 
@@ -97,7 +96,7 @@ export class IpBackoffMiddleware implements NestMiddleware {
         routeType: 'AUTH',
       };
     }
-    
+
     return {
       maxRequests: this.MAX_REQUESTS,
       windowSize: this.WINDOW_SIZE_MS,
@@ -132,7 +131,7 @@ export class IpBackoffMiddleware implements NestMiddleware {
       if (isBlocked) {
         // LOG BLOCKED IPS
         this.logger.warn(`❌ BLOCKED IP attempting access: ${ip} | Path: ${req.path} | Method: ${req.method}`);
-        
+
         throw new HttpException(
           {
             message:

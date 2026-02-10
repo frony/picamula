@@ -35,21 +35,24 @@ export class PasswordService {
     private readonly authService: AuthenticationService,
     @InjectRepository(PasswordResetToken)
     private readonly passwordResetTokenRepository: Repository<PasswordResetToken>,
-  ) {}
+  ) { }
 
   async sendResetToken(tokenIdentifier: TokenIdentifier) {
     const { email, captchaToken } = tokenIdentifier;
 
-    // ============================
-    // Validate CAPTCHA token
-    // ============================
-    if (!captchaToken) {
-      throw new BadRequestException('CAPTCHA verification is required');
-    }
-
-    const isValidCaptcha = await verifyAltchaPayload(captchaToken);
-    if (!isValidCaptcha) {
-      throw new BadRequestException('Invalid CAPTCHA verification');
+    // ========================================================
+    // Validate CAPTCHA token 
+    // (skip when DISABLE_CAPTCHA=true for Postman/local testing)
+    // ========================================================
+    const captchaDisabled = process.env.DISABLE_CAPTCHA === 'true';
+    if (!captchaDisabled) {
+      if (!captchaToken) {
+        throw new BadRequestException('CAPTCHA verification is required');
+      }
+      const isValidCaptcha = await verifyAltchaPayload(captchaToken);
+      if (!isValidCaptcha) {
+        throw new BadRequestException('Invalid CAPTCHA verification');
+      }
     }
 
     // ============================
@@ -105,23 +108,23 @@ export class PasswordService {
       const resetPasswordUrl = `${this.configService.get(
         'RESET_PASSWORD_URL',
       )}?apiKey=${apiKey}`;
-      
+
       this.logger.log(`Sending password reset email to ${email} with URL: ${resetPasswordUrl}`);
-      
+
       await this.emailTemplateService.sendPasswordResetEmail({
         email,
         resetUrl: resetPasswordUrl,
       });
-      
+
       this.logger.log(`Password reset email sent successfully to ${email}`);
       return apiKey;
     } catch (error) {
       this.logger.error(`Error in sendResetToken for ${email}:`, error);
-      
+
       if (error instanceof UnauthorizedException) {
         throw new UnauthorizedException('Access denied');
       }
-      
+
       // Check if it's an email-related error
       if (error.message && error.message.includes('email')) {
         this.logger.error(`Email sending failed: ${error.message}`);
@@ -130,7 +133,7 @@ export class PasswordService {
           description: 'Email service error',
         });
       }
-      
+
       throw new BadRequestException(error.message, {
         cause: error,
         description: error.message,

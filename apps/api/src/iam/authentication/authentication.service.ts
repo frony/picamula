@@ -46,7 +46,7 @@ export class AuthenticationService {
     private readonly refreshTokenService: RefreshTokenService,
     private readonly otpAuthService: OtpAuthenticationService,
     private readonly usersService: UsersService,
-  ) {}
+  ) { }
 
   /**
    * Create a new user in the database
@@ -54,16 +54,19 @@ export class AuthenticationService {
    * @param signUpDto
    */
   async signUp(signUpDto: SignUpDto): Promise<CreatedUser> {
-    // ============================
-    // Validate CAPTCHA token
-    // ============================
-    if (!signUpDto.captchaToken) {
-      throw new BadRequestException('CAPTCHA verification is required');
-    }
-
-    const isValidCaptcha = await verifyAltchaPayload(signUpDto.captchaToken);
-    if (!isValidCaptcha) {
-      throw new BadRequestException('Invalid CAPTCHA verification');
+    // ========================================================
+    // Validate CAPTCHA token 
+    // (skip when DISABLE_CAPTCHA=true for Postman/local testing)
+    // ========================================================
+    const captchaDisabled = process.env.DISABLE_CAPTCHA === 'true';
+    if (!captchaDisabled) {
+      if (!signUpDto.captchaToken) {
+        throw new BadRequestException('CAPTCHA verification is required');
+      }
+      const isValidCaptcha = await verifyAltchaPayload(signUpDto.captchaToken);
+      if (!isValidCaptcha) {
+        throw new BadRequestException('Invalid CAPTCHA verification');
+      }
     }
 
     try {
@@ -111,16 +114,19 @@ export class AuthenticationService {
    * @param userAgent
    */
   async signIn(signInDto: SignInDto, ipAddress?: string, userAgent?: string): Promise<{ accessToken: string; refreshToken: string }> {
-    // ============================
-    // Validate CAPTCHA token
-    // ============================
-    if (!signInDto.captchaToken) {
-      throw new BadRequestException('CAPTCHA verification is required');
-    }
-
-    const isValidCaptcha = await verifyAltchaPayload(signInDto.captchaToken);
-    if (!isValidCaptcha) {
-      throw new BadRequestException('Invalid CAPTCHA verification');
+    // ========================================================
+    // Validate CAPTCHA token 
+    // (skip when DISABLE_CAPTCHA=true for Postman/local testing)
+    // ========================================================
+    const captchaDisabled = process.env.DISABLE_CAPTCHA === 'true';
+    if (!captchaDisabled) {
+      if (!signInDto.captchaToken) {
+        throw new BadRequestException('CAPTCHA verification is required');
+      }
+      const isValidCaptcha = await verifyAltchaPayload(signInDto.captchaToken);
+      if (!isValidCaptcha) {
+        throw new BadRequestException('Invalid CAPTCHA verification');
+      }
     }
 
     const user = await this.usersRepository.findOneBy({
@@ -193,7 +199,7 @@ export class AuthenticationService {
   async generateTokens(user, ipAddress?: string, userAgent?: string): Promise<{ accessToken: string; refreshToken: string }> {
     const refreshTokenId = randomUUID();
     const expiresAt = new Date(Date.now() + this.jwtConfiguration.refreshTokenTtl * 1000);
-    
+
     const [accessToken, refreshToken] = await Promise.all([
       this.signToken<Partial<ActiveUserData>>(
         user.id,
@@ -241,14 +247,14 @@ export class AuthenticationService {
         issuer: this.jwtConfiguration.issuer,
         secret: this.jwtConfiguration.secret,
       });
-      
+
       const user = await this.usersRepository.findOneByOrFail({
         id: sub,
       });
 
       // Validate token using new service
       const token = await this.refreshTokenService.validateToken(user.id, refreshTokenId);
-      
+
       // Check for potential token reuse
       const isReused = await this.refreshTokenService.detectTokenReuse(user.id, token.familyId);
       if (isReused) {
@@ -261,7 +267,7 @@ export class AuthenticationService {
       // Rotate tokens
       const newTokenId = randomUUID();
       const expiresAt = new Date(Date.now() + this.jwtConfiguration.refreshTokenTtl * 1000);
-      
+
       await this.refreshTokenService.rotateToken(
         user.id,
         refreshTokenId,

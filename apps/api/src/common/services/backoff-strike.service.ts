@@ -1,7 +1,6 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
+import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 
 interface StrikeRecord {
   strikes: number;
@@ -47,7 +46,7 @@ export class BackoffStrikeService {
    */
   async isIPBlocked(clientIP: string): Promise<boolean> {
     const strikeKey = `strikes:${clientIP}`;
-    
+
     try {
       const strikeData = await this.cacheManager.get<string>(strikeKey);
       if (!strikeData) {
@@ -56,14 +55,14 @@ export class BackoffStrikeService {
 
       const record: StrikeRecord = JSON.parse(strikeData);
       const isBlocked = Date.now() < record.blockedUntil;
-      
+
       if (isBlocked) {
         const remainingMs = record.blockedUntil - Date.now();
         this.logger.debug(
           `IP ${clientIP} is blocked (${record.strikes} strikes, ${Math.ceil(remainingMs / 1000)}s remaining)`
         );
       }
-      
+
       return isBlocked;
     } catch (error) {
       this.logger.error(`Error checking if IP blocked: ${error.message}`);
@@ -76,7 +75,7 @@ export class BackoffStrikeService {
    */
   async checkAndResetStrikes(clientIP: string): Promise<void> {
     const strikeKey = `strikes:${clientIP}`;
-    
+
     try {
       const strikeData = await this.cacheManager.get<string>(strikeKey);
       if (!strikeData) {
@@ -103,13 +102,13 @@ export class BackoffStrikeService {
    */
   async recordViolation(clientIP: string): Promise<void> {
     const strikeKey = `strikes:${clientIP}`;
-    
+
     try {
       const strikeData = await this.cacheManager.get<string>(strikeKey);
       const now = Date.now();
-      
+
       let record: StrikeRecord;
-      
+
       if (strikeData) {
         record = JSON.parse(strikeData);
         record.strikes = Math.min(record.strikes + 1, this.maxStrikes);
@@ -122,7 +121,7 @@ export class BackoffStrikeService {
       }
 
       record.lastViolation = now;
-      
+
       // Calculate block duration using exponential backoff
       const blockDuration = this.calculateBlockDuration(record.strikes);
       record.blockedUntil = now + blockDuration;
@@ -170,10 +169,10 @@ export class BackoffStrikeService {
    */
   async getStrikeInfo(clientIP: string): Promise<StrikeRecord | null> {
     const strikeKey = `strikes:${clientIP}`;
-    
+
     try {
       const strikeData = await this.cacheManager.get<string>(strikeKey);
-      
+
       if (!strikeData) {
         return null;
       }
