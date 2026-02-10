@@ -186,10 +186,8 @@ export class IpBackoffMiddleware implements NestMiddleware {
 
         // Store updated backoff count (with a longer TTL)
         // Using 24 hours as the retention period for the backoff count
-        const BACKOFF_COUNT_TTL = 24 * 60 * 60; // 24 hours in seconds
-        await this.cacheManager.set(backoffCountKey, newBackoffCount, {
-          ttl: BACKOFF_COUNT_TTL,
-        } as any);
+        const BACKOFF_COUNT_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+        await this.cacheManager.set(backoffCountKey, newBackoffCount, BACKOFF_COUNT_TTL);
 
         // LOG RATE LIMIT EXCEEDED WITH IP
         this.logger.warn(
@@ -199,10 +197,8 @@ export class IpBackoffMiddleware implements NestMiddleware {
         // Check if we need to permanently block this IP
         if (newBackoffCount >= this.MAX_BACKOFFS) {
           // Permanent block (or at least very long - 30 days)
-          const BLOCK_TTL = 30 * 24 * 60 * 60; // 30 days in seconds
-          await this.cacheManager.set(blockedKey, true, {
-            ttl: BLOCK_TTL,
-          } as any);
+          const BLOCK_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
+          await this.cacheManager.set(blockedKey, true, BLOCK_TTL);
 
           // LOG PERMANENT BLOCK
           this.logger.error(
@@ -219,9 +215,7 @@ export class IpBackoffMiddleware implements NestMiddleware {
         }
 
         // Set backoff key with expiration
-        await this.cacheManager.set(backoffKey, backoffUntil, {
-          ttl: Math.ceil(this.BACKOFF_DURATION_MS / 1000),
-        } as any);
+        await this.cacheManager.set(backoffKey, backoffUntil, this.BACKOFF_DURATION_MS);
 
         // Clear request history since we're now in backoff mode
         await this.cacheManager.del(requestsKey);
@@ -244,9 +238,7 @@ export class IpBackoffMiddleware implements NestMiddleware {
       recentTimestamps.push(currentTime);
 
       // Store updated timestamps with TTL
-      await this.cacheManager.set(requestsKey, recentTimestamps, {
-        ttl: Math.ceil(windowSize / 1000) + 5,
-      } as any);
+      await this.cacheManager.set(requestsKey, recentTimestamps, windowSize + 5000); // 5 seconds buffer
 
       this.logger.debug(
         `✅ Request from ${ip} allowed [${routeType}] (${recentTimestamps.length}/${maxRequests}) | Path: ${req.path}`,
