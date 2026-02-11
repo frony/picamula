@@ -29,6 +29,14 @@ export class CustomCacheService {
     };
   }
 
+  getCacheTtl(key: string) {
+    const ttl = Number(this.configService.get(`CACHE_${key.toUpperCase()}_TTL`));
+    if (!Number.isFinite(ttl) || ttl <= 0) {
+      throw new Error('Cache TTL must be a positive number');
+    }
+    return ttl ?? 2592000;
+  }
+
   async get(cacheKey: string) {
     try {
       if (isEmpty(cacheKey)) {

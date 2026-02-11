@@ -105,9 +105,8 @@ export class DestinationService {
       where: { tripId },
       order: { order: 'ASC' },
     });
-    const CACHE_DESTINATION_TTL = this.configService.get('CACHE_DESTINATION_TTL');
     const cacheKey = `trip:${trip.slug}:destinations`;
-    await this.cacheManager.set(cacheKey, destinations, CACHE_DESTINATION_TTL);
+    await this.cacheManager.set(cacheKey, destinations);
     return result;
   }
 
@@ -163,8 +162,7 @@ export class DestinationService {
     });
 
     // cache destinations
-    const CACHE_DESTINATION_TTL = this.configService.get('CACHE_DESTINATION_TTL');
-    await this.cacheManager.set(cacheKey, destinations, CACHE_DESTINATION_TTL);
+    await this.cacheManager.set(cacheKey, destinations);
 
     return destinations;
   }
@@ -247,9 +245,8 @@ export class DestinationService {
       where: { tripId },
       order: { order: 'ASC' },
     });
-    const CACHE_DESTINATION_TTL = this.configService.get('CACHE_DESTINATION_TTL');
     const cacheKey = `trip:${trip.slug}:destinations`;
-    await this.cacheManager.set(cacheKey, destinations, CACHE_DESTINATION_TTL);
+    await this.cacheManager.set(cacheKey, destinations);
     return result;
   }
 
@@ -318,9 +315,8 @@ export class DestinationService {
       where: { tripId },
       order: { order: 'ASC' },
     });
-    const CACHE_DESTINATION_TTL = this.configService.get('CACHE_DESTINATION_TTL');
     const cacheKey = `trip:${trip.slug}:destinations`;
-    await this.cacheManager.set(cacheKey, destinations, CACHE_DESTINATION_TTL);
+    await this.cacheManager.set(cacheKey, destinations);
     return;
   }
 
@@ -422,9 +418,8 @@ export class DestinationService {
       where: { tripId },
       order: { order: 'ASC' },
     });
-    const CACHE_DESTINATION_TTL = this.configService.get('CACHE_DESTINATION_TTL');
     const cacheKey = `trip:${trip.slug}:destinations`;
-    await this.cacheManager.set(cacheKey, destinations, CACHE_DESTINATION_TTL);
+    await this.cacheManager.set(cacheKey, destinations);
     return destinations;
   }
 }
