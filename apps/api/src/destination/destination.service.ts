@@ -22,6 +22,10 @@ export class DestinationService {
     private readonly configService: ConfigService,
   ) { }
 
+  private getCacheKey(tripSlug: string): string {
+    return `trip:${tripSlug}:destinations`;
+  }
+
   async create(tripId: number, createDestinationDto: CreateDestinationDto, userId: number): Promise<Destination> {
     // Verify trip exists and user owns it
     const trip = await this.tripRepository.findOne({
@@ -105,7 +109,7 @@ export class DestinationService {
       where: { tripId },
       order: { order: 'ASC' },
     });
-    const cacheKey = `trip:${trip.slug}:destinations`;
+    const cacheKey = this.getCacheKey(trip.slug);
     await this.cacheManager.set(cacheKey, destinations);
     return result;
   }
@@ -124,21 +128,23 @@ export class DestinationService {
       throw new ForbiddenException('You do not have access to this trip');
     }
 
-    const cacheKey = `trip:${trip.slug}:destinations`;
+    const cacheKey = this.getCacheKey(trip.slug);
     const cachedDestinations = await this.cacheManager.get(cacheKey);
     if (cachedDestinations) {
       return cachedDestinations as unknown as Destination[];
     }
 
-    return await this.destinationRepository.find({
+    const destinations = await this.destinationRepository.find({
       where: { tripId },
       order: { order: 'ASC' },
     });
+    await this.cacheManager.set(cacheKey, destinations);
+    return destinations;
   }
 
   async findAllByTripSlug(tripSlug: string, userId: number): Promise<Destination[]> {
     // cache key: CACHE_DESTINATION_TTL_KEY
-    const cacheKey = `trip:${tripSlug}:destinations`;
+    const cacheKey = this.getCacheKey(tripSlug);
     const cachedDestinations = await this.cacheManager.get(cacheKey);
     if (cachedDestinations) {
       return cachedDestinations as unknown as Destination[];
@@ -245,7 +251,7 @@ export class DestinationService {
       where: { tripId },
       order: { order: 'ASC' },
     });
-    const cacheKey = `trip:${trip.slug}:destinations`;
+    const cacheKey = this.getCacheKey(trip.slug);
     await this.cacheManager.set(cacheKey, destinations);
     return result;
   }
@@ -315,7 +321,7 @@ export class DestinationService {
       where: { tripId },
       order: { order: 'ASC' },
     });
-    const cacheKey = `trip:${trip.slug}:destinations`;
+    const cacheKey = this.getCacheKey(trip.slug);
     await this.cacheManager.set(cacheKey, destinations);
     return;
   }
@@ -418,7 +424,7 @@ export class DestinationService {
       where: { tripId },
       order: { order: 'ASC' },
     });
-    const cacheKey = `trip:${trip.slug}:destinations`;
+    const cacheKey = this.getCacheKey(trip.slug);
     await this.cacheManager.set(cacheKey, destinations);
     return destinations;
   }
