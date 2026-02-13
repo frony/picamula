@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Logger,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { NotesService } from './notes.service';
@@ -21,6 +22,8 @@ import { ActiveUserData } from '../iam/interfaces/active-user-data.interface';
 @Auth(AuthType.Bearer)
 @Controller('trips/:tripSlug/notes')
 export class NotesController {
+  private readonly logger = new Logger(NotesController.name);
+
   constructor(private readonly notesService: NotesService) {}
 
   @ApiOperation({ summary: 'Create a new note for a trip' })
@@ -28,12 +31,17 @@ export class NotesController {
   @ApiResponse({ status: 404, description: 'Trip not found' })
   @ApiResponse({ status: 403, description: 'Access denied' })
   @Post()
-  create(
+  async create(
     @Param('tripSlug') tripSlug: string,
     @Body() createNoteDto: CreateNoteDto,
     @ActiveUser() user: ActiveUserData
   ) {
-    return this.notesService.create(tripSlug, createNoteDto, user.sub);
+    try {
+      return await this.notesService.create(tripSlug, createNoteDto, user.sub);
+    } catch (error) {
+      this.logger.error(`Error creating note for trip ${tripSlug}:`, error);
+      throw error;
+    }
   }
 
   @ApiOperation({ summary: 'Get all notes for a trip' })
@@ -41,11 +49,16 @@ export class NotesController {
   @ApiResponse({ status: 404, description: 'Trip not found' })
   @ApiResponse({ status: 403, description: 'Access denied' })
   @Get()
-  findAll(
+  async findAll(
     @Param('tripSlug') tripSlug: string,
     @ActiveUser() user: ActiveUserData
   ) {
-    return this.notesService.findAllByTrip(tripSlug, user.sub);
+    try {
+      return await this.notesService.findAllByTrip(tripSlug, user.sub);
+    } catch (error) {
+      this.logger.error(`Error finding notes for trip ${tripSlug}:`, error);
+      throw error;
+    }
   }
 
   @ApiOperation({ summary: 'Get a specific note' })
@@ -53,11 +66,16 @@ export class NotesController {
   @ApiResponse({ status: 404, description: 'Note not found' })
   @ApiResponse({ status: 403, description: 'Access denied' })
   @Get(':id')
-  findOne(
+  async findOne(
     @Param('id') id: string,
     @ActiveUser() user: ActiveUserData
   ) {
-    return this.notesService.findOne(id, user.sub);
+    try {
+      return await this.notesService.findOne(id, user.sub);
+    } catch (error) {
+      this.logger.error(`Error finding note ${id}:`, error);
+      throw error;
+    }
   }
 
   @ApiOperation({ summary: 'Update a note' })
@@ -65,12 +83,17 @@ export class NotesController {
   @ApiResponse({ status: 404, description: 'Note not found' })
   @ApiResponse({ status: 403, description: 'Access denied' })
   @Patch(':id')
-  update(
+  async update(
     @Param('id') id: string,
     @Body() updateNoteDto: UpdateNoteDto,
     @ActiveUser() user: ActiveUserData
   ) {
-    return this.notesService.update(id, updateNoteDto, user.sub);
+    try {
+      return await this.notesService.update(id, updateNoteDto, user.sub);
+    } catch (error) {
+      this.logger.error(`Error updating note ${id}:`, error);
+      throw error;
+    }
   }
 
   @ApiOperation({ summary: 'Delete a note' })
@@ -78,10 +101,15 @@ export class NotesController {
   @ApiResponse({ status: 404, description: 'Note not found' })
   @ApiResponse({ status: 403, description: 'Access denied' })
   @Delete(':id')
-  remove(
+  async remove(
     @Param('id') id: string,
     @ActiveUser() user: ActiveUserData
   ) {
-    return this.notesService.remove(id, user.sub);
+    try {
+      return await this.notesService.remove(id, user.sub);
+    } catch (error) {
+      this.logger.error(`Error removing note ${id}:`, error);
+      throw error;
+    }
   }
 }

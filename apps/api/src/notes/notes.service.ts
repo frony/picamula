@@ -20,10 +20,6 @@ export class NotesService {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) { }
 
-  private getCacheKey(tripSlug: string): string {
-    return `trip:${tripSlug}:notes`;
-  }
-
   private async validateNoteDateWithinDestination(
     noteDate: Date,
     destinationId: number,
@@ -97,23 +93,13 @@ export class NotesService {
       throw new NotFoundException('Failed to retrieve saved note');
     }
 
-    // cache notes
-    const cacheKey = this.getCacheKey(trip.slug);
-    const cachedNotes = await this.cacheManager.get(cacheKey);
-    if (cachedNotes) {
-      await this.cacheManager.set(cacheKey, [...(cachedNotes as unknown as Note[]), savedNote]);
-    } else {
-      await this.cacheManager.set(cacheKey, [savedNote]);
-    }
+    const cacheKey = `trip:${trip.slug}`;
+    await this.cacheManager.del(cacheKey);
+
     return savedNote;
   }
 
   async findAllByTrip(tripSlug: string, userId: number): Promise<Note[]> {
-    const cacheKey = this.getCacheKey(tripSlug);
-    const cachedNotes = await this.cacheManager.get(cacheKey);
-    if (cachedNotes) {
-      return cachedNotes as unknown as Note[];
-    }
     // Find trip by slug and verify user has access
     const trip = await this.tripsRepository.findOne({
       where: { slug: tripSlug, ownerId: userId },
@@ -127,8 +113,6 @@ export class NotesService {
       where: { tripId: trip.id },
       order: { date: 'DESC', createdAt: 'DESC' },
     });
-    // cache notes
-    await this.cacheManager.set(cacheKey, notes);
     return notes;
   }
 
@@ -187,31 +171,14 @@ export class NotesService {
       throw new NotFoundException('Failed to retrieve updated note');
     }
 
-    // cache notes - replace the existing note in cache, don't append
-    const cacheKey = this.getCacheKey(note.trip.slug);
-    const cachedNotes = await this.cacheManager.get(cacheKey);
-    if (cachedNotes) {
-      const notes = cachedNotes as unknown as Note[];
-      const updatedNotes = notes.map((n) => n.id === id ? updatedNote : n);
-      await this.cacheManager.set(cacheKey, updatedNotes);
-    } else {
-      await this.cacheManager.set(cacheKey, [updatedNote]);
-    }
+    const cacheKey = `trip:${note.trip.slug}`;
+    await this.cacheManager.del(cacheKey);
+
     return updatedNote;
   }
 
   async remove(id: string, userId: number): Promise<void> {
     const note = await this.findOne(id, userId);
-    const deletedNote = await this.notesRepository.remove(note);
-    // cache notes
-    const cacheKey = this.getCacheKey(note.trip.slug);
-    const cachedNotes = await this.cacheManager.get(cacheKey);
-    if (cachedNotes) {
-      await this.cacheManager.set(
-        cacheKey,
-        (cachedNotes as unknown as Note[]).filter(n => n.id !== id)
-      );
-      return;
-    }
+    await this.notesRepository.remove(note);
   }
 }

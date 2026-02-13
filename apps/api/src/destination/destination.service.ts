@@ -6,7 +6,6 @@ import { CreateDestinationDto } from './dto/create-destination.dto';
 import { Trip } from '../trips/entities/trip.entity';
 import { GeocodingService } from '../geocoding/geocoding.service';
 import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
-import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class DestinationService {
@@ -19,11 +18,10 @@ export class DestinationService {
     private tripRepository: Repository<Trip>,
     private geocodingService: GeocodingService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
-    private readonly configService: ConfigService,
   ) { }
 
-  private getCacheKey(tripSlug: string): string {
-    return `trip:${tripSlug}:destinations`;
+  private async invalidateTripCache(tripSlug: string): Promise<void> {
+    await this.cacheManager.del(`trip:${tripSlug}`);
   }
 
   async create(tripId: number, createDestinationDto: CreateDestinationDto, userId: number): Promise<Destination> {
@@ -103,14 +101,7 @@ export class DestinationService {
     });
 
     const result = await this.destinationRepository.save(destination);
-    // cache destinations
-    this.logger.log(`caching destinations for trip ${trip.slug}`);
-    const destinations = await this.destinationRepository.find({
-      where: { tripId },
-      order: { order: 'ASC' },
-    });
-    const cacheKey = this.getCacheKey(trip.slug);
-    await this.cacheManager.set(cacheKey, destinations);
+    await this.invalidateTripCache(trip.slug);
     return result;
   }
 
@@ -128,27 +119,14 @@ export class DestinationService {
       throw new ForbiddenException('You do not have access to this trip');
     }
 
-    const cacheKey = this.getCacheKey(trip.slug);
-    const cachedDestinations = await this.cacheManager.get(cacheKey);
-    if (cachedDestinations) {
-      return cachedDestinations as unknown as Destination[];
-    }
-
     const destinations = await this.destinationRepository.find({
       where: { tripId },
       order: { order: 'ASC' },
     });
-    await this.cacheManager.set(cacheKey, destinations);
     return destinations;
   }
 
   async findAllByTripSlug(tripSlug: string, userId: number): Promise<Destination[]> {
-    // cache key: CACHE_DESTINATION_TTL_KEY
-    const cacheKey = this.getCacheKey(tripSlug);
-    const cachedDestinations = await this.cacheManager.get(cacheKey);
-    if (cachedDestinations) {
-      return cachedDestinations as unknown as Destination[];
-    }
     // Verify trip exists and user owns it
     const trip = await this.tripRepository.findOne({
       where: { slug: tripSlug },
@@ -166,9 +144,6 @@ export class DestinationService {
       where: { tripId: trip.id },
       order: { order: 'ASC' },
     });
-
-    // cache destinations
-    await this.cacheManager.set(cacheKey, destinations);
 
     return destinations;
   }
@@ -245,14 +220,7 @@ export class DestinationService {
 
     Object.assign(destination, updateData);
     const result = await this.destinationRepository.save(destination);
-    // cache destinations
-    this.logger.log(`caching destinations for trip ${trip.slug}`);
-    const destinations = await this.destinationRepository.find({
-      where: { tripId },
-      order: { order: 'ASC' },
-    });
-    const cacheKey = this.getCacheKey(trip.slug);
-    await this.cacheManager.set(cacheKey, destinations);
+    await this.invalidateTripCache(trip.slug);
     return result;
   }
 
@@ -315,15 +283,7 @@ export class DestinationService {
         await this.destinationRepository.save(dest);
       }
     }
-    // cache destinations
-    this.logger.log(`caching destinations for trip ${trip.slug}`);
-    const destinations = await this.destinationRepository.find({
-      where: { tripId },
-      order: { order: 'ASC' },
-    });
-    const cacheKey = this.getCacheKey(trip.slug);
-    await this.cacheManager.set(cacheKey, destinations);
-    return;
+    await this.invalidateTripCache(trip.slug);
   }
 
   async reorder(tripId: number, sourceId: number, targetId: number, userId: number): Promise<Destination[]> {
@@ -418,14 +378,11 @@ export class DestinationService {
 
     // Save all affected destinations
     await this.destinationRepository.save(sortedDestinations);
+    await this.invalidateTripCache(trip.slug);
 
-    // Return all destinations sorted by order
-    const destinations = await this.destinationRepository.find({
+    return await this.destinationRepository.find({
       where: { tripId },
       order: { order: 'ASC' },
     });
-    const cacheKey = this.getCacheKey(trip.slug);
-    await this.cacheManager.set(cacheKey, destinations);
-    return destinations;
   }
 }
