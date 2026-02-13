@@ -136,7 +136,11 @@ export class TripsService {
       order: { createdAt: 'DESC' },
     });
     // cache trips
-    await this.cacheManager.set(cacheKey, trips);
+    // 1 day in milliseconds - findAll cache ttl is 1 day
+    const ttl = (86400 + Math.floor(Math.random() * 3600)) * 1000;
+    this.logger.log(`caching trips for user ${userId} for ${ttl} milliseconds`);
+    await this.cacheManager.set(cacheKey, trips, ttl);
+    this.logger.log(`trips for user ${userId} cached for ${ttl} milliseconds`);
     return trips;
   }
 
@@ -167,7 +171,7 @@ export class TripsService {
     return trip;
   }
 
-  async findBySlug(slug: string, userId: number): Promise<Trip> {
+  async findBySlug(slug: string, userId?: number): Promise<Trip> {
     const cacheKey = `trip:${slug}`
     // return cached trip
     const cachedTrip: Trip = await this.cacheManager.get(cacheKey);
@@ -193,12 +197,18 @@ export class TripsService {
     }
 
     // Check if user owns the trip
-    if (trip.ownerId !== userId) {
-      throw new ForbiddenException('You do not have access to this trip');
+    if (!trip.isPublic && trip.ownerId !== userId) {
+      throw new ForbiddenException();
     }
+    // if (trip.ownerId !== userId) {
+    //   throw new ForbiddenException('You do not have access to this trip');
+    // }
 
     // cache trip
-    await this.cacheManager.set(cacheKey, trip);
+    // 7 days in milliseconds - findBySlug cache ttl is 7 days
+    const ttl = (604800 + Math.floor(Math.random() * 3600)) * 1000;
+    await this.cacheManager.set(cacheKey, trip, ttl);
+    this.logger.log(`trip ${slug} cached for ${ttl} milliseconds`);
 
     return trip;
   }
@@ -258,7 +268,11 @@ export class TripsService {
   }
 
   async updateBySlug(slug: string, updateTripDto: UpdateTripDto, userId: number): Promise<Trip> {
-    const trip = await this.findBySlug(slug, userId);
+    const trip = await this.tripsRepository.findOne({ where: { slug } });
+
+    if (!trip || trip.ownerId !== userId) {
+      throw new ForbiddenException();
+    }
 
     // Extract mediaFiles and coordinates from DTO and handle separately
     const { mediaFiles, startCityLatitude, startCityLongitude, ...tripData } = updateTripDto;
@@ -446,7 +460,10 @@ export class TripsService {
       order: { createdAt: 'DESC' },
     });
     // cache trips
-    await this.cacheManager.set(cacheKey, trips);
+    // 1 day in milliseconds - findByStatus cache ttl is 1 day
+    const ttl = (86400 + Math.floor(Math.random() * 3600)) * 1000;
+    await this.cacheManager.set(cacheKey, trips, ttl);
+    this.logger.log(`trips for user ${userId} for status ${status} cached for ${ttl} milliseconds`);
     return trips;
   }
 
@@ -465,7 +482,10 @@ export class TripsService {
       order: { startDate: 'ASC' }
     });
     // cache trips
-    await this.cacheManager.set(cacheKey, trips);
+    // 1 day in milliseconds - findUpcoming cache ttl is 1 day
+    const ttl = (86400 + Math.floor(Math.random() * 3600)) * 1000;
+    await this.cacheManager.set(cacheKey, trips, ttl);
+    this.logger.log(`trips for user ${userId} for upcoming trips cached for ${ttl} milliseconds`);
     return trips;
   }
 
