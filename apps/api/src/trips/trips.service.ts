@@ -1,12 +1,13 @@
-import { Injectable, NotFoundException, ForbiddenException, Logger, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger, InternalServerErrorException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan, QueryRunner } from 'typeorm';
-import { Trip } from './entities/trip.entity';
+import { Trip, TripStatus } from './entities/trip.entity';
 import { MediaFile } from './entities/media-file.entity';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
 import { Destination } from '../destination/entities/destination.entity';
 import { GeocodingService } from '../geocoding/geocoding.service';
+import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 
 @Injectable()
 export class TripsService {
@@ -20,7 +21,16 @@ export class TripsService {
     @InjectRepository(Destination)
     private destinationRepository: Repository<Destination>,
     private geocodingService: GeocodingService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) { }
+
+  private async invalidateUserTripCache(userId: number): Promise<void> {
+    await this.cacheManager.del(`trip:${userId}:all`);
+    await this.cacheManager.del(`trip:${userId}:upcoming`);
+    for (const status of Object.values(TripStatus)) {
+      await this.cacheManager.del(`trip:${userId}:${status}`);
+    }
+  }
 
   async create(createTripDto: CreateTripDto, ownerId: number): Promise<Trip> {
     const { destinations, startCityLatitude, startCityLongitude, ...tripData } = createTripDto;
@@ -105,6 +115,8 @@ export class TripsService {
         }
       }
 
+      await this.invalidateUserTripCache(ownerId);
+
       return savedTrip;
     } catch (error) {
       this.logger.error(`Error creating trip for owner ${ownerId}:`, error);
@@ -113,10 +125,19 @@ export class TripsService {
   }
 
   async findAll(userId: number): Promise<Trip[]> {
-    return await this.tripsRepository.find({
+    const cacheKey = `trip:${userId}:all`
+    // return cached trips
+    const allTrips: Trip[] = await this.cacheManager.get(cacheKey);
+    if (allTrips) {
+      return allTrips;
+    }
+    const trips = await this.tripsRepository.find({
       where: { ownerId: userId },
       order: { createdAt: 'DESC' },
     });
+    // cache trips
+    await this.cacheManager.set(cacheKey, trips);
+    return trips;
   }
 
   async findOne(id: number, userId: number): Promise<Trip> {
@@ -147,6 +168,12 @@ export class TripsService {
   }
 
   async findBySlug(slug: string, userId: number): Promise<Trip> {
+    const cacheKey = `trip:${slug}`
+    // return cached trip
+    const cachedTrip: Trip = await this.cacheManager.get(cacheKey);
+    if (cachedTrip) {
+      return cachedTrip;
+    }
     const trip = await this.tripsRepository.findOne({
       where: { slug },
       relations: ['owner', 'notes', 'notes.author', 'mediaFiles', 'destinations'],
@@ -169,6 +196,9 @@ export class TripsService {
     if (trip.ownerId !== userId) {
       throw new ForbiddenException('You do not have access to this trip');
     }
+
+    // cache trip
+    await this.cacheManager.set(cacheKey, trip);
 
     return trip;
   }
@@ -209,12 +239,13 @@ export class TripsService {
 
       // Commit transaction
       await queryRunner.commitTransaction();
+      await this.invalidateUserTripCache(userId);
+      const cacheKey = `trip:${trip.slug}`;
+      await this.cacheManager.del(cacheKey);
+      await this.cacheManager.set(cacheKey, updatedTrip);
 
       // Return trip with media files included
-      return await this.tripsRepository.findOne({
-        where: { id: trip.id },
-        relations: ['owner', 'notes', 'mediaFiles', 'destinations'],
-      });
+      return updatedTrip;
     } catch (error) {
       // Rollback transaction on error
       await queryRunner.rollbackTransaction();
@@ -263,11 +294,13 @@ export class TripsService {
       // Commit transaction
       await queryRunner.commitTransaction();
 
+      await this.invalidateUserTripCache(userId);
+      const cacheKey = `trip:${trip.slug}`;
+      await this.cacheManager.del(cacheKey);
+      await this.cacheManager.set(cacheKey, updatedTrip);
+
       // Return trip with media files included
-      return await this.tripsRepository.findOne({
-        where: { id: trip.id },
-        relations: ['owner', 'notes', 'mediaFiles', 'destinations'],
-      });
+      return updatedTrip;
     } catch (error) {
       // Rollback transaction on error
       await queryRunner.rollbackTransaction();
@@ -390,28 +423,50 @@ export class TripsService {
   async remove(id: number, userId: number): Promise<void> {
     const trip = await this.findOne(id, userId);
     await this.tripsRepository.remove(trip);
+    await this.invalidateUserTripCache(userId);
+    await this.cacheManager.del(`trip:${trip.slug}`);
   }
 
   async removeBySlug(slug: string, userId: number): Promise<void> {
     const trip = await this.findBySlug(slug, userId);
     await this.tripsRepository.remove(trip);
+    await this.invalidateUserTripCache(userId);
+    await this.cacheManager.del(`trip:${slug}`);
   }
 
   async findByStatus(status: string, userId: number): Promise<Trip[]> {
-    return await this.tripsRepository.find({
+    const cacheKey = `trip:${userId}:${status}`
+    // return cached trips
+    const cachedTrips: Trip[] = await this.cacheManager.get(cacheKey);
+    if (cachedTrips) {
+      return cachedTrips;
+    }
+    const trips = await this.tripsRepository.find({
       where: { ownerId: userId, status: status as any },
       order: { createdAt: 'DESC' },
     });
+    // cache trips
+    await this.cacheManager.set(cacheKey, trips);
+    return trips;
   }
 
   async findUpcoming(userId: number): Promise<Trip[]> {
-    return await this.tripsRepository.find({
+    const cacheKey = `trip:${userId}:upcoming`
+    // return cached trips
+    const cachedTrips: Trip[] = await this.cacheManager.get(cacheKey);
+    if (cachedTrips) {
+      return cachedTrips;
+    }
+    const trips = await this.tripsRepository.find({
       where: {
         ownerId: userId,
         startDate: MoreThan(new Date())
       },
       order: { startDate: 'ASC' }
     });
+    // cache trips
+    await this.cacheManager.set(cacheKey, trips);
+    return trips;
   }
 
   /**
