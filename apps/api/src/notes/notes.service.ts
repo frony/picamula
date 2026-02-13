@@ -180,5 +180,7 @@ export class NotesService {
   async remove(id: string, userId: number): Promise<void> {
     const note = await this.findOne(id, userId);
     await this.notesRepository.remove(note);
+    const cacheKey = `trip:${note.trip.slug}`;
+    await this.cacheManager.del(cacheKey);
   }
 }

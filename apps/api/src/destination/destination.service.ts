@@ -20,10 +20,6 @@ export class DestinationService {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) { }
 
-  private async invalidateTripCache(tripSlug: string): Promise<void> {
-    await this.cacheManager.del(`trip:${tripSlug}`);
-  }
-
   async create(tripId: number, createDestinationDto: CreateDestinationDto, userId: number): Promise<Destination> {
     // Verify trip exists and user owns it
     const trip = await this.tripRepository.findOne({
@@ -101,7 +97,7 @@ export class DestinationService {
     });
 
     const result = await this.destinationRepository.save(destination);
-    await this.invalidateTripCache(trip.slug);
+    await this.cacheManager.del(`trip:${trip.slug}`);
     return result;
   }
 
@@ -220,7 +216,7 @@ export class DestinationService {
 
     Object.assign(destination, updateData);
     const result = await this.destinationRepository.save(destination);
-    await this.invalidateTripCache(trip.slug);
+    await this.cacheManager.del(`trip:${trip.slug}`);
     return result;
   }
 
@@ -283,7 +279,7 @@ export class DestinationService {
         await this.destinationRepository.save(dest);
       }
     }
-    await this.invalidateTripCache(trip.slug);
+    await this.cacheManager.del(`trip:${trip.slug}`);
   }
 
   async reorder(tripId: number, sourceId: number, targetId: number, userId: number): Promise<Destination[]> {
@@ -378,7 +374,7 @@ export class DestinationService {
 
     // Save all affected destinations
     await this.destinationRepository.save(sortedDestinations);
-    await this.invalidateTripCache(trip.slug);
+    await this.cacheManager.del(`trip:${trip.slug}`);
 
     return await this.destinationRepository.find({
       where: { tripId },
