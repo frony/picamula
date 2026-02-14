@@ -6,8 +6,19 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/**
+ * Parse a date string or Date object into a local Date (no timezone shift).
+ * Handles ISO strings like '2026-03-15T00:00:00.000Z' by extracting YYYY-MM-DD
+ * and constructing a local date, avoiding UTC-to-local day shifts.
+ */
+function toLocalDate(date: Date | string): Date {
+  const str = date instanceof Date ? date.toISOString() : String(date)
+  const [year, month, day] = str.split('T')[0].split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
 export function formatDate(date: Date | string): string {
-  return new Date(date).toLocaleDateString('en-US', {
+  return toLocalDate(date).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -15,8 +26,8 @@ export function formatDate(date: Date | string): string {
 }
 
 export function formatDateRange(startDate: Date | string, endDate: Date | string): string {
-  const start = new Date(startDate)
-  const end = new Date(endDate)
+  const start = toLocalDate(startDate)
+  const end = toLocalDate(endDate)
 
   if (start.getFullYear() === end.getFullYear() && start.getMonth() === end.getMonth()) {
     return `${start.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - ${end.getDate()}, ${end.getFullYear()}`
@@ -26,8 +37,8 @@ export function formatDateRange(startDate: Date | string, endDate: Date | string
 }
 
 export function calculateTripDuration(startDate: Date | string, endDate: Date | string): number {
-  const start = new Date(startDate)
-  const end = new Date(endDate)
+  const start = toLocalDate(startDate)
+  const end = toLocalDate(endDate)
   const diffTime = Math.abs(end.getTime() - start.getTime())
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 }
