@@ -15,6 +15,7 @@ import { MediaGallery } from '@/components/trips/media-gallery'
 import { TripExpensesSection } from '@/components/expenses/TripExpensesSection'
 import {
   ArrowLeft,
+  LayoutDashboard,
   MapPin,
   Calendar,
   Users,
@@ -26,7 +27,7 @@ import {
   MoreHorizontal,
   Trash2,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
 } from 'lucide-react'
 import ItineraryMap from '@/components/ItineraryMap'
 
@@ -212,48 +213,6 @@ export default function TripDetailsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => router.push('/')}
-                className="flex items-center"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Dashboard
-              </Button>
-              <div className="hidden md:block w-px h-6 bg-gray-300" />
-              <h1 className="text-xl md:text-2xl font-bold text-primary">JuntaTribo</h1>
-            </div>
-            <div className="flex items-center space-x-2 md:space-x-4">
-              <span className="text-sm text-gray-600 hidden md:inline">
-                Welcome, {user?.firstName} {user?.lastName}!
-              </span>
-              {isOwner && (
-                <div className="flex items-center space-x-2">
-                  {/* <Button variant="outline" size="sm">
-                    <Share2 className="w-4 h-4 mr-2" />
-                    Share
-                  </Button> */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => router.push(`/trips/${params.id}/edit`)}
-                  >
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
-
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8">
         {/* Desktop: Two-column layout | Mobile/Tablet: Stacked layout */}
@@ -269,6 +228,25 @@ export default function TripDetailsPage() {
                     <Badge variant="secondary" className={`${getStatusColor(trip.status)} border`}>
                       {TRIP_STATUS_LABELS[trip.status]}
                     </Badge>
+                    {isOwner && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push(`/trips/${params.id}/edit`)}
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => router.push('/')}
+                      className="flex items-center"
+                    >
+                      <LayoutDashboard className="w-4 h-4 mr-2" />
+                      Dashboard
+                    </Button>
                   </div>
                   <div className="flex items-center text-gray-600 mb-2">
                     <MapPin className="w-5 h-5 mr-2" />
@@ -290,8 +268,8 @@ export default function TripDetailsPage() {
             {/* Itinerary Map - Mobile/Tablet only */}
             <div className="lg:hidden mb-6">
               {(trip.destinations && trip.destinations.length > 0) || trip.startCity || trip.destination ? (
-                <ItineraryMap 
-                  startCityName={trip.startCity || trip.destination} 
+                <ItineraryMap
+                  startCityName={trip.startCity || trip.destination}
                   destinations={trip.destinations}
                   readOnly={false}
                   tripId={trip.id}
@@ -314,271 +292,271 @@ export default function TripDetailsPage() {
               </Card>
             )}
 
-        {/* Trip Details Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {/* Dates */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center">
-                <Calendar className="w-5 h-5 mr-2 text-blue-600" />
-                Trip Dates
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="space-y-2">
-                <div>
-                  <p className="text-sm text-gray-600">Duration</p>
-                  <p className="font-medium">{formatDateRange(trip.startDate, trip.endDate)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Length</p>
-                  <p className="font-medium">{duration} days</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Status</p>
-                  <p className="font-medium">
-                    {startDate > today ? 'Upcoming' :
-                      endDate < today ? 'Past' : 'Ongoing'}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Participants */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center">
-                <Users className="w-5 h-5 mr-2 text-green-600" />
-                Travelers
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="space-y-2">
-                <div>
-                  <p className="text-sm text-gray-600">Total Travelers</p>
-                  <p className="font-medium">
-                    {(trip.participants?.length || 0) + 1} people
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Trip Owner</p>
-                  <p className="font-medium">{trip.owner.firstName} {trip.owner.lastName}</p>
-                </div>
-                {trip.participants && trip.participants.length > 0 && (
-                  <div>
-                    <p className="text-sm text-gray-600">Participants</p>
-                    <div className="space-y-1">
-                      {trip.participants.map((participant, index) => (
-                        <p key={index} className="font-medium text-sm">{participant}</p>
-                      ))}
+            {/* Trip Details Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {/* Dates */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center">
+                    <Calendar className="w-5 h-5 mr-2 text-blue-600" />
+                    Trip Dates
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-sm text-gray-600">Duration</p>
+                      <p className="font-medium">{formatDateRange(trip.startDate, trip.endDate)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Length</p>
+                      <p className="font-medium">{duration} days</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Status</p>
+                      <p className="font-medium">
+                        {startDate > today ? 'Upcoming' :
+                          endDate < today ? 'Past' : 'Ongoing'}
+                      </p>
                     </div>
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
 
-          {/* Budget */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center">
-                <DollarSign className="w-5 h-5 mr-2 text-yellow-600" />
-                Budget & Timing
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="space-y-2">
-                <div>
-                  <p className="text-sm text-gray-600">Budget</p>
-                  <p className="font-medium">
-                    {trip.budget ? `$${trip.budget.toLocaleString()}` : 'Not specified'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Created</p>
-                  <p className="font-medium">
-                    {new Date(trip.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Last Updated</p>
-                  <p className="font-medium">
-                    {new Date(trip.updatedAt).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Itinerary Section */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center">
-              <Clock className="w-5 h-5 mr-2 text-purple-600" />
-              Itinerary
-            </CardTitle>
-            <CardDescription>
-              Trip activities and schedule
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {trip.itinerary && trip.itinerary.length > 0 ? (
-              <div className="space-y-4">
-                {trip.itinerary.map((item, index) => (
-                  <div key={index} className="border-l-4 border-blue-200 pl-4 py-2">
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono">
-                        {JSON.stringify(item, null, 2)}
-                      </pre>
+              {/* Participants */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center">
+                    <Users className="w-5 h-5 mr-2 text-green-600" />
+                    Travelers
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-sm text-gray-600">Total Travelers</p>
+                      <p className="font-medium">
+                        {(trip.participants?.length || 0) + 1} people
+                      </p>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <Clock className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <p>No itinerary items yet</p>
-                <p className="text-sm">Activities and schedule will appear here</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Media Gallery Section */}
-        {trip.mediaFiles && trip.mediaFiles.length > 0 && (
-          <div className="mb-8">
-            <MediaGallery
-              mediaFiles={trip.mediaFiles}
-              tripId={trip.id}
-              isOwner={isOwner}
-              onMediaDeleted={() => fetchTrip(false)}
-            />
-          </div>
-        )}
-
-        {/* Expenses Section */}
-        <div className="mb-8">
-          <TripExpensesSection
-            tripId={trip.id}
-            tripOwner={trip.owner}
-            participants={trip.participants || []}
-            isOwner={isOwner}
-          />
-        </div>
-
-        {/* Notes Section */}
-        <Card>
-          <CardHeader
-            className="cursor-pointer select-none"
-            onClick={() => setIsNotesOpen(!isNotesOpen)}
-          >
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <CardTitle className="text-lg flex items-center">
-                  <MoreHorizontal className="w-5 h-5 mr-2 text-orange-600" />
-                  Trip Notes
-                  {trip.notes && trip.notes.length > 0 && (
-                    <span className="ml-2 text-sm font-normal text-gray-500">
-                      ({trip.notes.length})
-                    </span>
-                  )}
-                </CardTitle>
-                {isNotesOpen ? (
-                  <ChevronUp className="w-5 h-5 text-gray-400" />
-                ) : (
-                  <ChevronDown className="w-5 h-5 text-gray-400" />
-                )}
-              </div>
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleAddNote()
-                }}
-                size="sm"
-              >
-                Add Note
-              </Button>
-            </div>
-          </CardHeader>
-          {isNotesOpen && (
-            <CardContent>
-              {trip.notes && trip.notes.length > 0 ? (
-                <div className="space-y-4">
-                  {trip.notes.map((note) => {
-                    // Find the destination name if destinationId exists
-                    const noteDestination = note.destinationId && trip.destinations
-                      ? trip.destinations.find(d => d.id === note.destinationId)
-                      : null;
-                    
-                    return (
-                      <div key={note.id} className="border-l-4 border-orange-200 pl-4 py-3">
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <div className="flex justify-between items-start mb-2">
-                            <div className="flex flex-col">
-                              <span className="text-xs text-gray-500 font-medium">
-                                {new Date(note.date).toLocaleDateString('en-US', {
-                                  year: 'numeric',
-                                  month: 'long',
-                                  day: 'numeric'
-                                })}
-                              </span>
-                              <span className="text-xs text-gray-400 mt-1">
-                                by {note.author ? `${note.author.firstName} ${note.author.lastName}` : 'Unknown'}
-                              </span>
-                              {noteDestination && (
-                                <span className="text-xs text-blue-600 mt-1 flex items-center">
-                                  <MapPin className="w-3 h-3 mr-1" />
-                                  {noteDestination.name}
-                                </span>
-                              )}
-                            </div>
-                            {isOwner && (
-                              <div className="flex items-center space-x-1">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleEditNote(note.id)}
-                                  className="text-gray-500 hover:text-gray-700"
-                                >
-                                  <Edit className="w-3 h-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDeleteNote(note.id)}
-                                  className="text-red-500 hover:text-red-700"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                          <p className="text-gray-700 whitespace-pre-wrap">{note.content}</p>
+                    <div>
+                      <p className="text-sm text-gray-600">Trip Owner</p>
+                      <p className="font-medium">{trip.owner.firstName} {trip.owner.lastName}</p>
+                    </div>
+                    {trip.participants && trip.participants.length > 0 && (
+                      <div>
+                        <p className="text-sm text-gray-600">Participants</p>
+                        <div className="space-y-1">
+                          {trip.participants.map((participant, index) => (
+                            <p key={index} className="font-medium text-sm">{participant}</p>
+                          ))}
                         </div>
                       </div>
-                    );
-                  })}
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Budget */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center">
+                    <DollarSign className="w-5 h-5 mr-2 text-yellow-600" />
+                    Budget & Timing
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-sm text-gray-600">Budget</p>
+                      <p className="font-medium">
+                        {trip.budget ? `$${trip.budget.toLocaleString()}` : 'Not specified'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Created</p>
+                      <p className="font-medium">
+                        {new Date(trip.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Last Updated</p>
+                      <p className="font-medium">
+                        {new Date(trip.updatedAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Itinerary Section */}
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center">
+                  <Clock className="w-5 h-5 mr-2 text-purple-600" />
+                  Itinerary
+                </CardTitle>
+                <CardDescription>
+                  Trip activities and schedule
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {trip.itinerary && trip.itinerary.length > 0 ? (
+                  <div className="space-y-4">
+                    {trip.itinerary.map((item, index) => (
+                      <div key={index} className="border-l-4 border-blue-200 pl-4 py-2">
+                        <div className="bg-gray-50 rounded-lg p-3">
+                          <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono">
+                            {JSON.stringify(item, null, 2)}
+                          </pre>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Clock className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                    <p>No itinerary items yet</p>
+                    <p className="text-sm">Activities and schedule will appear here</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Media Gallery Section */}
+            {trip.mediaFiles && trip.mediaFiles.length > 0 && (
+              <div className="mb-8">
+                <MediaGallery
+                  mediaFiles={trip.mediaFiles}
+                  tripId={trip.id}
+                  isOwner={isOwner}
+                  onMediaDeleted={() => fetchTrip(false)}
+                />
+              </div>
+            )}
+
+            {/* Expenses Section */}
+            <div className="mb-8">
+              <TripExpensesSection
+                tripId={trip.id}
+                tripOwner={trip.owner}
+                participants={trip.participants || []}
+                isOwner={isOwner}
+              />
+            </div>
+
+            {/* Notes Section */}
+            <Card>
+              <CardHeader
+                className="cursor-pointer select-none"
+                onClick={() => setIsNotesOpen(!isNotesOpen)}
+              >
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-lg flex items-center">
+                      <MoreHorizontal className="w-5 h-5 mr-2 text-orange-600" />
+                      Trip Notes
+                      {trip.notes && trip.notes.length > 0 && (
+                        <span className="ml-2 text-sm font-normal text-gray-500">
+                          ({trip.notes.length})
+                        </span>
+                      )}
+                    </CardTitle>
+                    {isNotesOpen ? (
+                      <ChevronUp className="w-5 h-5 text-gray-400" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-gray-400" />
+                    )}
+                  </div>
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleAddNote()
+                    }}
+                    size="sm"
+                  >
+                    Add Note
+                  </Button>
                 </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <MoreHorizontal className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                  <p>No notes yet</p>
-                  <p className="text-sm">Add notes to keep track of important trip information</p>
-                </div>
+              </CardHeader>
+              {isNotesOpen && (
+                <CardContent>
+                  {trip.notes && trip.notes.length > 0 ? (
+                    <div className="space-y-4">
+                      {trip.notes.map((note) => {
+                        // Find the destination name if destinationId exists
+                        const noteDestination = note.destinationId && trip.destinations
+                          ? trip.destinations.find(d => d.id === note.destinationId)
+                          : null;
+
+                        return (
+                          <div key={note.id} className="border-l-4 border-orange-200 pl-4 py-3">
+                            <div className="bg-gray-50 rounded-lg p-4">
+                              <div className="flex justify-between items-start mb-2">
+                                <div className="flex flex-col">
+                                  <span className="text-xs text-gray-500 font-medium">
+                                    {new Date(note.date).toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'long',
+                                      day: 'numeric'
+                                    })}
+                                  </span>
+                                  <span className="text-xs text-gray-400 mt-1">
+                                    by {note.author ? `${note.author.firstName} ${note.author.lastName}` : 'Unknown'}
+                                  </span>
+                                  {noteDestination && (
+                                    <span className="text-xs text-blue-600 mt-1 flex items-center">
+                                      <MapPin className="w-3 h-3 mr-1" />
+                                      {noteDestination.name}
+                                    </span>
+                                  )}
+                                </div>
+                                {isOwner && (
+                                  <div className="flex items-center space-x-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleEditNote(note.id)}
+                                      className="text-gray-500 hover:text-gray-700"
+                                    >
+                                      <Edit className="w-3 h-3" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleDeleteNote(note.id)}
+                                      className="text-red-500 hover:text-red-700"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                              <p className="text-gray-700 whitespace-pre-wrap">{note.content}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <MoreHorizontal className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                      <p>No notes yet</p>
+                      <p className="text-sm">Add notes to keep track of important trip information</p>
+                    </div>
+                  )}
+                </CardContent>
               )}
-            </CardContent>
-          )}
-        </Card>
+            </Card>
           </div>
 
           {/* Right Column - Map (Desktop only) */}
           <div className="hidden lg:block lg:w-[400px] lg:flex-shrink-0">
             <div className="sticky top-6">
               {(trip.destinations && trip.destinations.length > 0) || trip.startCity || trip.destination ? (
-                <ItineraryMap 
-                  startCityName={trip.startCity || trip.destination} 
+                <ItineraryMap
+                  startCityName={trip.startCity || trip.destination}
                   destinations={trip.destinations}
                   readOnly={false}
                   tripId={trip.id}
