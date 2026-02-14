@@ -121,6 +121,24 @@ export default function AddNotePage() {
     }
   }
 
+  const handleDestinationChange = (destinationId: string) => {
+    setSelectedDestinationId(destinationId)
+
+    // Auto-adjust the date to fit within the destination's date range
+    if (destinationId && destinationId !== 'none') {
+      const destination = destinations.find(d => String(d.id) === destinationId)
+      if (destination?.arrivalDate && destination?.departureDate) {
+        const currentDate = selectedDate
+        const arrival = destination.arrivalDate.split('T')[0]
+        const departure = destination.departureDate.split('T')[0]
+
+        if (currentDate < arrival || currentDate > departure) {
+          setSelectedDate(arrival)
+        }
+      }
+    }
+  }
+
   const handleCancel = () => {
     router.push(`/trips/${params.id}`)
   }
@@ -228,7 +246,7 @@ export default function AddNotePage() {
                   </Label>
                   <Select
                     value={selectedDestinationId}
-                    onValueChange={setSelectedDestinationId}
+                    onValueChange={handleDestinationChange}
                     disabled={isLoadingDestinations}
                   >
                     <SelectTrigger className="w-full">

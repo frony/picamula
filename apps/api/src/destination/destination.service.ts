@@ -46,15 +46,22 @@ export class DestinationService {
     // Get the previous destination (the one with the current max order)
     const previousDestination = sortedDestinations.find(d => d.order === maxOrder);
 
-    // Set default arrival and departure dates based on previous destination's departure date
+    // Set default arrival and departure dates
     let arrivalDate = createDestinationDto.arrivalDate;
     let departureDate = createDestinationDto.departureDate;
 
+    // If no arrivalDate provided, use previous destination's departureDate
     if (!arrivalDate && previousDestination?.departureDate) {
       arrivalDate = previousDestination.departureDate;
     }
-    if (!departureDate && arrivalDate) {
-      departureDate = arrivalDate;
+
+    // If no departureDate provided, use the trip's end date as fallback
+    // (new destinations are appended at the end, so there's no next destination)
+    if (!departureDate) {
+      const tripEndDateStr = trip.endDate instanceof Date
+        ? trip.endDate.toISOString().split('T')[0]
+        : String(trip.endDate).split('T')[0];
+      departureDate = tripEndDateStr;
     }
 
     // If this is the first additional destination (order would be 1),

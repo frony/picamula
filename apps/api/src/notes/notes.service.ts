@@ -35,24 +35,25 @@ export class NotesService {
 
     // Only validate if the destination has both arrival and departure dates
     if (destination.arrivalDate && destination.departureDate) {
-      const arrivalDate = new Date(destination.arrivalDate);
-      const departureDate = new Date(destination.departureDate);
+      // Compare as YYYY-MM-DD strings to avoid timezone issues.
+      // Destination dates are already stored as YYYY-MM-DD strings (via dateTransformer).
+      // Note date is extracted as UTC to match.
+      const noteDateStr = noteDate.toISOString().split('T')[0];
+      const arrivalStr = String(destination.arrivalDate).split('T')[0];
+      const departureStr = String(destination.departureDate).split('T')[0];
 
-      // Normalize dates to compare only date parts (ignore time) using UTC to avoid timezone issues
-      const noteDateOnly = Date.UTC(noteDate.getUTCFullYear(), noteDate.getUTCMonth(), noteDate.getUTCDate());
-      const arrivalDateOnly = Date.UTC(arrivalDate.getUTCFullYear(), arrivalDate.getUTCMonth(), arrivalDate.getUTCDate());
-      const departureDateOnly = Date.UTC(departureDate.getUTCFullYear(), departureDate.getUTCMonth(), departureDate.getUTCDate());
-
-      if (noteDateOnly < arrivalDateOnly || noteDateOnly > departureDateOnly) {
-        // Format dates in UTC to avoid timezone conversion
-        const formatDate = (d: Date) => d.toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-          timeZone: 'UTC'
-        });
+      if (noteDateStr < arrivalStr || noteDateStr > departureStr) {
+        const formatDateStr = (dateStr: string) => {
+          const [year, month, day] = dateStr.split('-').map(Number);
+          return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            timeZone: 'UTC'
+          });
+        };
         throw new BadRequestException(
-          `Note date must be within the destination dates (${formatDate(arrivalDate)} - ${formatDate(departureDate)})`
+          `Note date must be within the destination's arrival and departure dates (${formatDateStr(arrivalStr)} - ${formatDateStr(departureStr)})`
         );
       }
     }
