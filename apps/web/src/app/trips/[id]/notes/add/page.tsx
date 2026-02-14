@@ -3,7 +3,7 @@
 import React from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/hooks/use-auth'
-import { notesApi, destinationsApi } from '@/lib/api'
+import { notesApi, destinationsApi, tripsApi } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
@@ -26,7 +26,7 @@ export default function AddNotePage() {
   const { user, isLoading: authLoading } = useAuth()
   const { toast } = useToast()
   const [content, setContent] = React.useState('')
-  const [selectedDate, setSelectedDate] = React.useState(new Date().toISOString().split('T')[0])
+  const [selectedDate, setSelectedDate] = React.useState('')
   const [selectedDestinationId, setSelectedDestinationId] = React.useState<string>('')
   const [destinations, setDestinations] = React.useState<Destination[]>([])
   const [isLoadingDestinations, setIsLoadingDestinations] = React.useState(true)
@@ -35,6 +35,19 @@ export default function AddNotePage() {
   // Track if we've already checked auth to prevent duplicate redirects
   const hasCheckedAuthRef = React.useRef(false)
   const hasFetchedDestinationsRef = React.useRef(false)
+
+  // Fetch trip data to get the start date
+  const fetchTripData = React.useCallback(async () => {
+    try {
+      const response = await tripsApi.getById(params.id)
+      const tripStartDate = String(response.data.startDate).split('T')[0]
+      setSelectedDate(tripStartDate)
+    } catch (error: any) {
+      console.error('Failed to fetch trip:', error)
+      // Fallback to today if trip fetch fails
+      setSelectedDate(new Date().toISOString().split('T')[0])
+    }
+  }, [params.id])
 
   // Fetch destinations for the trip
   const fetchDestinations = React.useCallback(async () => {
@@ -47,7 +60,6 @@ export default function AddNotePage() {
       setDestinations(response.data)
     } catch (error: any) {
       console.error('Failed to fetch destinations:', error)
-      // Don't show error toast - destinations are optional
     } finally {
       setIsLoadingDestinations(false)
     }
@@ -68,9 +80,10 @@ export default function AddNotePage() {
       return
     }
 
-    // Fetch destinations if authenticated
+    // Fetch trip data and destinations if authenticated
+    fetchTripData()
     fetchDestinations()
-  }, [user, authLoading, router, fetchDestinations])
+  }, [user, authLoading, router, fetchTripData, fetchDestinations])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
