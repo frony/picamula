@@ -1,12 +1,13 @@
-import { Injectable, NotFoundException, ForbiddenException, Logger, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger, InternalServerErrorException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan, QueryRunner } from 'typeorm';
-import { Trip } from './entities/trip.entity';
+import { Trip, TripStatus } from './entities/trip.entity';
 import { MediaFile } from './entities/media-file.entity';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
 import { Destination } from '../destination/entities/destination.entity';
 import { GeocodingService } from '../geocoding/geocoding.service';
+import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 
 @Injectable()
 export class TripsService {
@@ -20,7 +21,16 @@ export class TripsService {
     @InjectRepository(Destination)
     private destinationRepository: Repository<Destination>,
     private geocodingService: GeocodingService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) { }
+
+  private async invalidateUserTripCache(userId: number): Promise<void> {
+    await this.cacheManager.del(`trip:${userId}:all`);
+    await this.cacheManager.del(`trip:${userId}:upcoming`);
+    for (const status of Object.values(TripStatus)) {
+      await this.cacheManager.del(`trip:${userId}:${status}`);
+    }
+  }
 
   async create(createTripDto: CreateTripDto, ownerId: number): Promise<Trip> {
     const { destinations, startCityLatitude, startCityLongitude, ...tripData } = createTripDto;
@@ -105,6 +115,8 @@ export class TripsService {
         }
       }
 
+      await this.invalidateUserTripCache(ownerId);
+
       return savedTrip;
     } catch (error) {
       this.logger.error(`Error creating trip for owner ${ownerId}:`, error);
@@ -113,10 +125,23 @@ export class TripsService {
   }
 
   async findAll(userId: number): Promise<Trip[]> {
-    return await this.tripsRepository.find({
+    const cacheKey = `trip:${userId}:all`
+    // return cached trips
+    const allTrips: Trip[] = await this.cacheManager.get(cacheKey);
+    if (allTrips) {
+      return allTrips;
+    }
+    const trips = await this.tripsRepository.find({
       where: { ownerId: userId },
       order: { createdAt: 'DESC' },
     });
+    // cache trips
+    // 1 day in milliseconds - findAll cache ttl is 1 day
+    const ttl = (86400 + Math.floor(Math.random() * 3600)) * 1000;
+    this.logger.log(`caching trips for user ${userId} for ${ttl} milliseconds`);
+    await this.cacheManager.set(cacheKey, trips, ttl);
+    this.logger.log(`trips for user ${userId} cached for ${ttl} milliseconds`);
+    return trips;
   }
 
   async findOne(id: number, userId: number): Promise<Trip> {
@@ -146,7 +171,13 @@ export class TripsService {
     return trip;
   }
 
-  async findBySlug(slug: string, userId: number): Promise<Trip> {
+  async findBySlug(slug: string, userId?: number): Promise<Trip> {
+    const cacheKey = `trip:${slug}`
+    // return cached trip
+    const cachedTrip: Trip = await this.cacheManager.get(cacheKey);
+    if (cachedTrip) {
+      return cachedTrip;
+    }
     const trip = await this.tripsRepository.findOne({
       where: { slug },
       relations: ['owner', 'notes', 'notes.author', 'mediaFiles', 'destinations'],
@@ -166,9 +197,18 @@ export class TripsService {
     }
 
     // Check if user owns the trip
-    if (trip.ownerId !== userId) {
-      throw new ForbiddenException('You do not have access to this trip');
+    if (!trip.isPublic && trip.ownerId !== userId) {
+      throw new ForbiddenException();
     }
+    // if (trip.ownerId !== userId) {
+    //   throw new ForbiddenException('You do not have access to this trip');
+    // }
+
+    // cache trip
+    // 7 days in milliseconds - findBySlug cache ttl is 7 days
+    const ttl = (604800 + Math.floor(Math.random() * 3600)) * 1000;
+    await this.cacheManager.set(cacheKey, trip, ttl);
+    this.logger.log(`trip ${slug} cached for ${ttl} milliseconds`);
 
     return trip;
   }
@@ -209,12 +249,13 @@ export class TripsService {
 
       // Commit transaction
       await queryRunner.commitTransaction();
+      await this.invalidateUserTripCache(userId);
+      const cacheKey = `trip:${trip.slug}`;
+      await this.cacheManager.del(cacheKey);
+      await this.cacheManager.set(cacheKey, updatedTrip);
 
       // Return trip with media files included
-      return await this.tripsRepository.findOne({
-        where: { id: trip.id },
-        relations: ['owner', 'notes', 'mediaFiles', 'destinations'],
-      });
+      return updatedTrip;
     } catch (error) {
       // Rollback transaction on error
       await queryRunner.rollbackTransaction();
@@ -227,7 +268,11 @@ export class TripsService {
   }
 
   async updateBySlug(slug: string, updateTripDto: UpdateTripDto, userId: number): Promise<Trip> {
-    const trip = await this.findBySlug(slug, userId);
+    const trip = await this.tripsRepository.findOne({ where: { slug } });
+
+    if (!trip || trip.ownerId !== userId) {
+      throw new ForbiddenException();
+    }
 
     // Extract mediaFiles and coordinates from DTO and handle separately
     const { mediaFiles, startCityLatitude, startCityLongitude, ...tripData } = updateTripDto;
@@ -263,11 +308,13 @@ export class TripsService {
       // Commit transaction
       await queryRunner.commitTransaction();
 
+      await this.invalidateUserTripCache(userId);
+      const cacheKey = `trip:${trip.slug}`;
+      await this.cacheManager.del(cacheKey);
+      await this.cacheManager.set(cacheKey, updatedTrip);
+
       // Return trip with media files included
-      return await this.tripsRepository.findOne({
-        where: { id: trip.id },
-        relations: ['owner', 'notes', 'mediaFiles', 'destinations'],
-      });
+      return updatedTrip;
     } catch (error) {
       // Rollback transaction on error
       await queryRunner.rollbackTransaction();
@@ -390,28 +437,56 @@ export class TripsService {
   async remove(id: number, userId: number): Promise<void> {
     const trip = await this.findOne(id, userId);
     await this.tripsRepository.remove(trip);
+    await this.invalidateUserTripCache(userId);
+    await this.cacheManager.del(`trip:${trip.slug}`);
   }
 
   async removeBySlug(slug: string, userId: number): Promise<void> {
     const trip = await this.findBySlug(slug, userId);
     await this.tripsRepository.remove(trip);
+    await this.invalidateUserTripCache(userId);
+    await this.cacheManager.del(`trip:${slug}`);
   }
 
   async findByStatus(status: string, userId: number): Promise<Trip[]> {
-    return await this.tripsRepository.find({
+    const cacheKey = `trip:${userId}:${status}`
+    // return cached trips
+    const cachedTrips: Trip[] = await this.cacheManager.get(cacheKey);
+    if (cachedTrips) {
+      return cachedTrips;
+    }
+    const trips = await this.tripsRepository.find({
       where: { ownerId: userId, status: status as any },
       order: { createdAt: 'DESC' },
     });
+    // cache trips
+    // 1 day in milliseconds - findByStatus cache ttl is 1 day
+    const ttl = (86400 + Math.floor(Math.random() * 3600)) * 1000;
+    await this.cacheManager.set(cacheKey, trips, ttl);
+    this.logger.log(`trips for user ${userId} for status ${status} cached for ${ttl} milliseconds`);
+    return trips;
   }
 
   async findUpcoming(userId: number): Promise<Trip[]> {
-    return await this.tripsRepository.find({
+    const cacheKey = `trip:${userId}:upcoming`
+    // return cached trips
+    const cachedTrips: Trip[] = await this.cacheManager.get(cacheKey);
+    if (cachedTrips) {
+      return cachedTrips;
+    }
+    const trips = await this.tripsRepository.find({
       where: {
         ownerId: userId,
         startDate: MoreThan(new Date())
       },
       order: { startDate: 'ASC' }
     });
+    // cache trips
+    // 1 day in milliseconds - findUpcoming cache ttl is 1 day
+    const ttl = (86400 + Math.floor(Math.random() * 3600)) * 1000;
+    await this.cacheManager.set(cacheKey, trips, ttl);
+    this.logger.log(`trips for user ${userId} for upcoming trips cached for ${ttl} milliseconds`);
+    return trips;
   }
 
   /**

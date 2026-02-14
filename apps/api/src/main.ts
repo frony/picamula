@@ -4,7 +4,6 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
-import cookieParser from 'cookie-parser';
 import basicAuth from 'express-basic-auth';
 
 async function bootstrap() {
@@ -40,8 +39,6 @@ async function bootstrap() {
       transform: true,
     })
   );
-
-  app.use(cookieParser());
 
   // Swagger setup (limited to non-production)
   if (process.env.NODE_ENV !== 'production') {

@@ -127,10 +127,8 @@ export class BackoffStrikeService {
       record.blockedUntil = now + blockDuration;
 
       // Store in cache with expiration (use longer of block duration or cooldown period)
-      const expirationTime = Math.max(blockDuration, this.cooldownPeriod) / 1000; // Convert to seconds
-      await this.cacheManager.set(strikeKey, JSON.stringify(record), {
-        ttl: expirationTime,
-      } as any);
+      const expirationTime = Math.max(blockDuration, this.cooldownPeriod);
+      await this.cacheManager.set(strikeKey, JSON.stringify(record), expirationTime);
 
       this.logger.warn(
         `🎯 Strike recorded for IP ${clientIP}: ${record.strikes}/${this.maxStrikes} strikes, blocked for ${this.formatDuration(blockDuration)}`

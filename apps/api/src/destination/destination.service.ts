@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Destination } from './entities/destination.entity';
 import { CreateDestinationDto } from './dto/create-destination.dto';
 import { Trip } from '../trips/entities/trip.entity';
 import { GeocodingService } from '../geocoding/geocoding.service';
+import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 
 @Injectable()
 export class DestinationService {
@@ -16,7 +17,8 @@ export class DestinationService {
     @InjectRepository(Trip)
     private tripRepository: Repository<Trip>,
     private geocodingService: GeocodingService,
-  ) {}
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+  ) { }
 
   async create(tripId: number, createDestinationDto: CreateDestinationDto, userId: number): Promise<Destination> {
     // Verify trip exists and user owns it
@@ -35,24 +37,31 @@ export class DestinationService {
 
     // Sort destinations by order
     const sortedDestinations = (trip.destinations || []).sort((a, b) => a.order - b.order);
-    
+
     // Get the current max order for destinations in this trip
-    const maxOrder = sortedDestinations.length > 0 
-      ? sortedDestinations[sortedDestinations.length - 1].order 
+    const maxOrder = sortedDestinations.length > 0
+      ? sortedDestinations[sortedDestinations.length - 1].order
       : -1;
 
     // Get the previous destination (the one with the current max order)
     const previousDestination = sortedDestinations.find(d => d.order === maxOrder);
 
-    // Set default arrival and departure dates based on previous destination's departure date
+    // Set default arrival and departure dates
     let arrivalDate = createDestinationDto.arrivalDate;
     let departureDate = createDestinationDto.departureDate;
 
+    // If no arrivalDate provided, use previous destination's departureDate
     if (!arrivalDate && previousDestination?.departureDate) {
       arrivalDate = previousDestination.departureDate;
     }
-    if (!departureDate && arrivalDate) {
-      departureDate = arrivalDate;
+
+    // If no departureDate provided, use the trip's end date as fallback
+    // (new destinations are appended at the end, so there's no next destination)
+    if (!departureDate) {
+      const tripEndDateStr = trip.endDate instanceof Date
+        ? trip.endDate.toISOString().split('T')[0]
+        : String(trip.endDate).split('T')[0];
+      departureDate = tripEndDateStr;
     }
 
     // If this is the first additional destination (order would be 1),
@@ -94,7 +103,9 @@ export class DestinationService {
       tripId,
     });
 
-    return await this.destinationRepository.save(destination);
+    const result = await this.destinationRepository.save(destination);
+    await this.cacheManager.del(`trip:${trip.slug}`);
+    return result;
   }
 
   async findAllByTrip(tripId: number, userId: number): Promise<Destination[]> {
@@ -111,10 +122,11 @@ export class DestinationService {
       throw new ForbiddenException('You do not have access to this trip');
     }
 
-    return await this.destinationRepository.find({
+    const destinations = await this.destinationRepository.find({
       where: { tripId },
       order: { order: 'ASC' },
     });
+    return destinations;
   }
 
   async findAllByTripSlug(tripSlug: string, userId: number): Promise<Destination[]> {
@@ -131,10 +143,12 @@ export class DestinationService {
       throw new ForbiddenException('You do not have access to this trip');
     }
 
-    return await this.destinationRepository.find({
+    const destinations = await this.destinationRepository.find({
       where: { tripId: trip.id },
       order: { order: 'ASC' },
     });
+
+    return destinations;
   }
 
   async update(id: number, tripId: number, updateData: Partial<CreateDestinationDto>, userId: number): Promise<Destination> {
@@ -159,18 +173,18 @@ export class DestinationService {
     }
 
     // Validate dates are within trip date range - convert Date to string
-    const tripStartDate = trip.startDate instanceof Date 
-      ? trip.startDate.toISOString().split('T')[0] 
+    const tripStartDate = trip.startDate instanceof Date
+      ? trip.startDate.toISOString().split('T')[0]
       : String(trip.startDate).split('T')[0];
-    const tripEndDate = trip.endDate instanceof Date 
-      ? trip.endDate.toISOString().split('T')[0] 
+    const tripEndDate = trip.endDate instanceof Date
+      ? trip.endDate.toISOString().split('T')[0]
       : String(trip.endDate).split('T')[0];
 
     // Calculate final dates (from update or existing destination) - all as YYYY-MM-DD strings
-    const newArrivalDate = updateData.arrivalDate 
+    const newArrivalDate = updateData.arrivalDate
       ? updateData.arrivalDate.split('T')[0]
       : destination.arrivalDate;
-    const newDepartureDate = updateData.departureDate 
+    const newDepartureDate = updateData.departureDate
       ? updateData.departureDate.split('T')[0]
       : destination.departureDate;
 
@@ -189,13 +203,28 @@ export class DestinationService {
       throw new BadRequestException('Departure date cannot be before arrival date');
     }
 
-    // If this is the first destination (order 1) and arrivalDate is being updated,
-    // also update the start city's (order 0) departure date
-    if (destination.order === 1 && updateData.arrivalDate !== undefined) {
-      const startCity = trip.destinations?.find(d => d.order === 0);
-      if (startCity) {
-        startCity.departureDate = updateData.arrivalDate.split('T')[0];
-        await this.destinationRepository.save(startCity);
+    // If arrivalDate is being updated, cascade to the previous destination's departureDate
+    if (updateData.arrivalDate !== undefined && destination.order > 0) {
+      const sortedDestinations = (trip.destinations || []).sort((a, b) => a.order - b.order);
+      const previousDestination = sortedDestinations.find(d => d.order === destination.order - 1);
+
+      if (previousDestination) {
+        const newArrival = updateData.arrivalDate.split('T')[0];
+        const prevArrival = previousDestination.arrivalDate
+          ? String(previousDestination.arrivalDate).split('T')[0]
+          : null;
+
+        // New arrival date cannot be before the previous destination's arrival date
+        // (the previous destination can't depart before it arrives)
+        if (prevArrival && newArrival < prevArrival) {
+          throw new BadRequestException(
+            `Arrival date cannot be before ${previousDestination.name}'s arrival date (${prevArrival})`
+          );
+        }
+
+        // Update previous destination's departure date to match this destination's new arrival
+        previousDestination.departureDate = newArrival;
+        await this.destinationRepository.save(previousDestination);
       }
     }
 
@@ -208,7 +237,9 @@ export class DestinationService {
     }
 
     Object.assign(destination, updateData);
-    return await this.destinationRepository.save(destination);
+    const result = await this.destinationRepository.save(destination);
+    await this.cacheManager.del(`trip:${trip.slug}`);
+    return result;
   }
 
   async remove(id: number, tripId: number, userId: number): Promise<void> {
@@ -270,6 +301,7 @@ export class DestinationService {
         await this.destinationRepository.save(dest);
       }
     }
+    await this.cacheManager.del(`trip:${trip.slug}`);
   }
 
   async reorder(tripId: number, sourceId: number, targetId: number, userId: number): Promise<Destination[]> {
@@ -364,8 +396,8 @@ export class DestinationService {
 
     // Save all affected destinations
     await this.destinationRepository.save(sortedDestinations);
+    await this.cacheManager.del(`trip:${trip.slug}`);
 
-    // Return all destinations sorted by order
     return await this.destinationRepository.find({
       where: { tripId },
       order: { order: 'ASC' },

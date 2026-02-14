@@ -97,6 +97,10 @@ export class Trip {
   @Column()
   ownerId: number;
 
+  @Column({ type: 'boolean', default: false })
+  isPublic: boolean;
+
+
   @CreateDateColumn()
   createdAt: Date;
 

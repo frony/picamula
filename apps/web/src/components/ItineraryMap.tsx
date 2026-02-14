@@ -93,8 +93,8 @@ export default function ItineraryMap({
   const editingDatesRef = useRef<{ arrivalDate: string; departureDate: string } | null>(null);
   const prevDestinationsKeyRef = useRef('');
 
-  // Create a key from destinations to detect changes (including reorder)
-  const destinationsKey = destinations.map(d => `${d.id}-${d.order}`).join(',');
+  // Create a key from destinations to detect changes (including reorder and date updates)
+  const destinationsKey = destinations.map(d => `${d.id}-${d.order}-${d.arrivalDate}-${d.departureDate}`).join(',');
 
   // Reset when destinations change (add, delete, or reorder)
   useEffect(() => {
@@ -343,14 +343,11 @@ export default function ItineraryMap({
 
       await destinationsApi.update(tripId, destinationId, { arrivalDate, departureDate });
 
-      // Update local state with string dates
-      setCities(prev => prev.map(city =>
-        city.id === cityId
-          ? { ...city, arrivalDate, departureDate }
-          : city
-      ));
+      // Clear local cities so they re-initialize from the refreshed destinations prop.
+      // This ensures cascaded date changes (e.g. previous destination's departureDate) are picked up.
+      setCities([]);
 
-      // Notify parent to refresh data (this will also update start city's departure date if needed)
+      // Notify parent to refresh data
       onDestinationAdded?.();
       editingDatesRef.current = null;
       return true;

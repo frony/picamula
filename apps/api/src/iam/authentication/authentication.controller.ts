@@ -7,8 +7,8 @@ import {
   Logger,
   Param,
   Post,
-  Res,
   Req,
+  Res,
 } from '@nestjs/common';
 import { AuthenticationService } from './authentication.service';
 import { SignUpDto } from './dto/sign-up.dto';
@@ -19,7 +19,7 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ActiveUser } from '../decorators/active-user.decorator';
 import { ActiveUserData } from '../interfaces/active-user-data.interface';
 import { OtpAuthenticationService } from './otp-authentication.service';
-import { Response, Request } from 'express';
+import { Request, Response } from 'express';
 import { toFileStream } from 'qrcode';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthTokensDto } from './dto/auth-tokens.dto';
@@ -74,8 +74,7 @@ export class AuthenticationController {
   @HttpCode(HttpStatus.OK) // Return 200 instead of NestJS default 201
   @Post('sign-in')
   async signIn(
-    @Body() signInDto: SignInDto, 
-    @Res({ passthrough: true }) res: Response,
+    @Body() signInDto: SignInDto,
     @Req() req: Request,
   ): Promise<{ accessToken: string; refreshToken: string }> {
     this.logger.log(`sign-in: ${JSON.stringify(signInDto)}`);
@@ -83,16 +82,7 @@ export class AuthenticationController {
     const ipAddress = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
     const userAgent = req.get('User-Agent');
     
-    const { accessToken, refreshToken } = await this.authService.signIn(signInDto, ipAddress, userAgent);
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 1000 * parseInt(process.env.JWT_REFRESH_TOKEN_TTL ?? '300', 10),
-    });
-    // Return both tokens - cookie for traditional clients, body for NextAuth
-    return { accessToken, refreshToken };
+    return this.authService.signIn(signInDto, ipAddress, userAgent);
   }
 
   /**
@@ -110,24 +100,13 @@ export class AuthenticationController {
   @HttpCode(HttpStatus.OK) // Return 200 instead of NestJS default 201
   @Post('refresh-tokens')
   async refreshToken(
-    @Res({ passthrough: true }) res: Response, 
     @Body() refreshTokenDto: RefreshTokenDto,
     @Req() req: Request,
   ): Promise<{ accessToken: string; refreshToken: string }> {
-    // The refreshTokenDto is not needed anymore, but keep for compatibility
     const ipAddress = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
     const userAgent = req.get('User-Agent');
     
-    const { accessToken, refreshToken } = await this.authService.refreshTokens(refreshTokenDto, ipAddress, userAgent);
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 1000 * parseInt(process.env.JWT_REFRESH_TOKEN_TTL ?? '300', 10),
-    });
-    // Return both tokens - cookie for traditional clients, body for NextAuth
-    return { accessToken, refreshToken };
+    return this.authService.refreshTokens(refreshTokenDto, ipAddress, userAgent);
   }
 
   /**
@@ -151,7 +130,7 @@ export class AuthenticationController {
     );
     await this.otpAuthService.enableTfaForUser(activeUser.email, secret);
     response.type('png');
-    return toFileStream(response, uri);
+    return toFileStream(response as any, uri);
   }
 
   @HttpCode(HttpStatus.OK)
