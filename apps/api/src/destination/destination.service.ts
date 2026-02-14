@@ -203,13 +203,28 @@ export class DestinationService {
       throw new BadRequestException('Departure date cannot be before arrival date');
     }
 
-    // If this is the first destination (order 1) and arrivalDate is being updated,
-    // also update the start city's (order 0) departure date
-    if (destination.order === 1 && updateData.arrivalDate !== undefined) {
-      const startCity = trip.destinations?.find(d => d.order === 0);
-      if (startCity) {
-        startCity.departureDate = updateData.arrivalDate.split('T')[0];
-        await this.destinationRepository.save(startCity);
+    // If arrivalDate is being updated, cascade to the previous destination's departureDate
+    if (updateData.arrivalDate !== undefined && destination.order > 0) {
+      const sortedDestinations = (trip.destinations || []).sort((a, b) => a.order - b.order);
+      const previousDestination = sortedDestinations.find(d => d.order === destination.order - 1);
+
+      if (previousDestination) {
+        const newArrival = updateData.arrivalDate.split('T')[0];
+        const prevArrival = previousDestination.arrivalDate
+          ? String(previousDestination.arrivalDate).split('T')[0]
+          : null;
+
+        // New arrival date cannot be before the previous destination's arrival date
+        // (the previous destination can't depart before it arrives)
+        if (prevArrival && newArrival < prevArrival) {
+          throw new BadRequestException(
+            `Arrival date cannot be before ${previousDestination.name}'s arrival date (${prevArrival})`
+          );
+        }
+
+        // Update previous destination's departure date to match this destination's new arrival
+        previousDestination.departureDate = newArrival;
+        await this.destinationRepository.save(previousDestination);
       }
     }
 
