@@ -148,6 +148,15 @@ export default function EditTripPage() {
                 <Button
                   variant="outline"
                   size="sm"
+                  onClick={() => router.push(`/trips/${params.id}`)}
+                  className="flex items-center"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Trip
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => router.push('/')}
                   className="flex items-center"
                 >
