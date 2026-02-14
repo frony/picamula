@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 import type { Trip } from '@junta-tribo/shared'
-import { ArrowLeft, Edit, MapPin } from 'lucide-react'
+import { ArrowLeft, Edit, LayoutDashboard, MapPin } from 'lucide-react'
 import ItineraryMap from '@/components/ItineraryMap'
 
 export default function EditTripPage() {
@@ -130,32 +130,6 @@ export default function EditTripPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => router.push(`/trips/${params.id}`)}
-                className="flex items-center"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Trip
-              </Button>
-              <div className="hidden md:block w-px h-6 bg-gray-300" />
-              <h1 className="text-xl md:text-2xl font-bold text-primary">JuntaTribo</h1>
-            </div>
-            <div className="flex items-center space-x-2 md:space-x-4">
-              <span className="text-sm text-gray-600 hidden md:inline">
-                Welcome, {user?.firstName} {user?.lastName}!
-              </span>
-            </div>
-          </div>
-        </div>
-      </header>
-
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8">
         {/* Desktop: Two-column layout | Mobile/Tablet: Stacked layout */}
@@ -170,10 +144,16 @@ export default function EditTripPage() {
                 </div>
                 <div>
                   <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Edit Trip</h2>
-                  <p className="text-gray-600 text-sm md:text-base mt-1">
-                    Update your trip details: {trip.title}
-                  </p>
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push('/')}
+                  className="flex items-center"
+                >
+                  <LayoutDashboard className="w-4 h-4 mr-2" />
+                  Back to Dashboard
+                </Button>
               </div>
             </div>
 
@@ -190,8 +170,8 @@ export default function EditTripPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <ItineraryMap 
-                    startCityName={trip.startCity || trip.destination} 
+                  <ItineraryMap
+                    startCityName={trip.startCity || trip.destination}
                     destinations={trip.destinations}
                     readOnly={false}
                     tripId={trip.id}
@@ -231,8 +211,8 @@ export default function EditTripPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <ItineraryMap 
-                    startCityName={trip.startCity || trip.destination} 
+                  <ItineraryMap
+                    startCityName={trip.startCity || trip.destination}
                     destinations={trip.destinations}
                     readOnly={false}
                     tripId={trip.id}
