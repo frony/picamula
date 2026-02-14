@@ -203,9 +203,10 @@ export class DestinationService {
       throw new BadRequestException('Departure date cannot be before arrival date');
     }
 
+    const sortedDestinations = (trip.destinations || []).sort((a, b) => a.order - b.order);
+
     // If arrivalDate is being updated, cascade to the previous destination's departureDate
     if (updateData.arrivalDate !== undefined && destination.order > 0) {
-      const sortedDestinations = (trip.destinations || []).sort((a, b) => a.order - b.order);
       const previousDestination = sortedDestinations.find(d => d.order === destination.order - 1);
 
       if (previousDestination) {
@@ -214,17 +215,35 @@ export class DestinationService {
           ? String(previousDestination.arrivalDate).split('T')[0]
           : null;
 
-        // New arrival date cannot be before the previous destination's arrival date
-        // (the previous destination can't depart before it arrives)
         if (prevArrival && newArrival < prevArrival) {
           throw new BadRequestException(
             `Arrival date cannot be before ${previousDestination.name}'s arrival date (${prevArrival})`
           );
         }
 
-        // Update previous destination's departure date to match this destination's new arrival
         previousDestination.departureDate = newArrival;
         await this.destinationRepository.save(previousDestination);
+      }
+    }
+
+    // If departureDate is being updated, cascade to the next destination's arrivalDate
+    if (updateData.departureDate !== undefined) {
+      const nextDestination = sortedDestinations.find(d => d.order === destination.order + 1);
+
+      if (nextDestination) {
+        const newDeparture = updateData.departureDate.split('T')[0];
+        const nextDeparture = nextDestination.departureDate
+          ? String(nextDestination.departureDate).split('T')[0]
+          : null;
+
+        if (nextDeparture && newDeparture > nextDeparture) {
+          throw new BadRequestException(
+            `Departure date cannot be after ${nextDestination.name}'s departure date (${nextDeparture})`
+          );
+        }
+
+        nextDestination.arrivalDate = newDeparture;
+        await this.destinationRepository.save(nextDestination);
       }
     }
 
