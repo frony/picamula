@@ -446,6 +446,8 @@ export class TripsService {
     await this.tripsRepository.remove(trip);
     await this.invalidateUserTripCache(userId);
     await this.cacheManager.del(`trip:${slug}`);
+    await this.cacheManager.del(`trip:${slug}:expenses`);
+    this.logger.log(`trip ${slug} deleted from cache`);
   }
 
   async findByStatus(status: string, userId: number): Promise<Trip[]> {

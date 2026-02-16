@@ -39,6 +39,7 @@ export interface CreateTripExpenseDto {
   comment?: string | null;
   amount: number;
   tripId: number;
+  tripSlug: string;
   paidById: number;
 }
 
@@ -49,6 +50,8 @@ export interface UpdateTripExpenseDto {
   memo?: string;
   comment?: string | null;
   amount?: number;
+  tripSlug?: string;
+  tripId?: number;
   paidById?: number;
 }
 

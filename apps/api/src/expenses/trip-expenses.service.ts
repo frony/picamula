@@ -3,6 +3,8 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Inject,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -11,9 +13,11 @@ import { CreateTripExpenseDto } from './dto/create-trip-expense.dto';
 import { UpdateTripExpenseDto } from './dto/update-trip-expense.dto';
 import { Trip } from '../trips/entities/trip.entity';
 import { User } from '../users/entities/user.entity';
+import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 
 @Injectable()
 export class TripExpensesService {
+  private readonly logger = new Logger(TripExpensesService.name);
   constructor(
     @InjectRepository(TripExpenses)
     private readonly tripExpenseRepository: Repository<TripExpenses>,
@@ -21,6 +25,7 @@ export class TripExpensesService {
     private readonly tripRepository: Repository<Trip>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) { }
 
   async create(
@@ -67,21 +72,32 @@ export class TripExpensesService {
     const savedExpense = await this.tripExpenseRepository.save(expense);
 
     // Reload with paidBy relation
-    return await this.tripExpenseRepository.findOne({
+    const reloadedExpense = await this.tripExpenseRepository.findOne({
       where: { id: savedExpense.id },
       relations: ['paidBy'],
     });
+    // delete cache for expenses
+    const cacheKey = `trip:${trip.slug}:expenses`;
+    await this.cacheManager.del(cacheKey);
+    this.logger.log(`expenses for trip ${trip.slug} deleted from cache`);
+
+    return reloadedExpense;
   }
 
-  async findAll(tripId: number, currentUserId: number): Promise<TripExpenses[]> {
+  async findAllBySlug(tripSlug: string, currentUserId: number): Promise<TripExpenses[]> {
+    const cacheKey = `trip:${tripSlug}:expenses`;
+    const cachedExpenses = await this.cacheManager.get(cacheKey);
+    if (cachedExpenses) {
+      return cachedExpenses as unknown as TripExpenses[];
+    }
     // Verify user has access to the trip
     const trip = await this.tripRepository.findOne({
-      where: { id: tripId },
+      where: { slug: tripSlug },
       relations: ['owner'],
     });
 
     if (!trip) {
-      throw new NotFoundException(`Trip with ID ${tripId} not found`);
+      throw new NotFoundException(`Trip with slug ${tripSlug} not found`);
     }
 
     const hasAccess = await this.verifyUserTripAccess(currentUserId, trip);
@@ -89,11 +105,17 @@ export class TripExpensesService {
       throw new ForbiddenException('You do not have access to this trip');
     }
 
-    return await this.tripExpenseRepository.find({
-      where: { tripId },
+    const expenses = await this.tripExpenseRepository.find({
+      where: { tripId: trip.id },
       relations: ['paidBy', 'trip'],
       order: { date: 'DESC' },
     });
+    // cache expenses
+    // 1 day in milliseconds - findAll cache ttl is 1 day
+    const ttl = (86400 + Math.floor(Math.random() * 3600)) * 1000;
+    await this.cacheManager.set(cacheKey, expenses, ttl);
+    this.logger.log(`expenses for trip ${tripSlug} cached for ${ttl} milliseconds`);
+    return expenses;
   }
 
   async findOne(id: number, currentUserId: number): Promise<TripExpenses> {
@@ -125,40 +147,58 @@ export class TripExpensesService {
   ): Promise<TripExpenses> {
     const expense = await this.findOne(id, currentUserId);
 
-    // If updating paidBy, verify the new payer is valid
-    if (updateTripExpenseDto.paidById) {
-      await this.verifyPayerIsValid(
-        expense.trip,
-        updateTripExpenseDto.paidById,
-      );
+    try {
+      // If updating paidBy, verify the new payer is valid
+      if (updateTripExpenseDto.paidById) {
+        await this.verifyPayerIsValid(
+          expense.trip,
+          updateTripExpenseDto.paidById,
+        );
+      }
+
+      // Use TypeORM's update method to directly update the database
+      const { tripSlug, ...updateData } = updateTripExpenseDto;
+      await this.tripExpenseRepository.update(id, updateData);
+      // await this.tripExpenseRepository.update(id, updateTripExpenseDto);
+
+      // Reload with updated paidBy relation
+      const reloaded = await this.tripExpenseRepository.findOne({
+        where: { id },
+        relations: ['paidBy'],
+      });
+
+      // delete cache for expenses
+      const cacheKey = `trip:${expense.trip.slug}:expenses`;
+      await this.cacheManager.del(cacheKey);
+      this.logger.log(`expenses for trip ${expense.trip.slug} deleted from cache`);
+
+      return reloaded;
+    } catch (error) {
+      this.logger.error(`Error updating expense: ${error}`);
+      throw new BadRequestException(`Error updating expense: ${error}`);
     }
 
-    // Use TypeORM's update method to directly update the database
-    await this.tripExpenseRepository.update(id, updateTripExpenseDto);
 
-    // Reload with updated paidBy relation
-    const reloaded = await this.tripExpenseRepository.findOne({
-      where: { id },
-      relations: ['paidBy'],
-    });
-
-    return reloaded;
   }
 
   async remove(id: number, currentUserId: number): Promise<void> {
     const expense = await this.findOne(id, currentUserId);
     await this.tripExpenseRepository.remove(expense);
+    // delete cache for expenses
+    const cacheKey = `trip:${expense.trip.slug}:expenses`;
+    await this.cacheManager.del(cacheKey);
+    this.logger.log(`expenses for trip ${expense.trip.slug} deleted from cache`);
   }
 
   async getTripExpensesSummary(
-    tripId: number,
+    tripSlug: string,
     currentUserId: number,
   ): Promise<{
     totalExpenses: number;
     expensesByType: Record<string, number>;
     expensesByPayer: Array<{ userId: number; userName: string; total: number }>;
   }> {
-    const expenses = await this.findAll(tripId, currentUserId);
+    const expenses = await this.findAllBySlug(tripSlug, currentUserId);
 
     const totalExpenses = expenses.reduce(
       (sum, expense) => sum + Number(expense.amount),

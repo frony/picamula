@@ -46,28 +46,28 @@ export class TripExpensesController {
     return this.tripExpensesService.create(createTripExpenseDto, user.sub);
   }
 
-  @Get()
-  @ApiOperation({ summary: 'Get all expenses for a trip' })
+  @Get('by-slug')
+  @ApiOperation({ summary: 'Get all expenses for a trip by slug' })
   @ApiResponse({ status: 200, description: 'Return all trip expenses.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @ApiResponse({ status: 404, description: 'Trip not found.' })
-  findAll(
-    @Query('tripId', ParseIntPipe) tripId: number,
+  findAllBySlug(
+    @Query('tripSlug') tripSlug: string,
     @ActiveUser() user: ActiveUserData,
   ) {
-    return this.tripExpensesService.findAll(tripId, user.sub);
+    return this.tripExpensesService.findAllBySlug(tripSlug, user.sub);
   }
 
-  @Get('summary')
+  @Get('summary/by-slug/:tripSlug')
   @ApiOperation({ summary: 'Get expenses summary for a trip' })
   @ApiResponse({ status: 200, description: 'Return trip expenses summary.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @ApiResponse({ status: 404, description: 'Trip not found.' })
-  getSummary(
-    @Query('tripId', ParseIntPipe) tripId: number,
+  getSummaryBySlug(
+    @Param('tripSlug') tripSlug: string,
     @ActiveUser() user: ActiveUserData,
   ) {
-    return this.tripExpensesService.getTripExpensesSummary(tripId, user.sub);
+    return this.tripExpensesService.getTripExpensesSummary(tripSlug, user.sub);
   }
 
   @Get(':id')

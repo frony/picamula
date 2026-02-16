@@ -205,14 +205,14 @@ export const todosApi = {
 
 // Trip Expenses API
 export const tripExpensesApi = {
-  getAll: (tripId: number): Promise<AxiosResponse<TripExpense[]>> =>
-    api.get('/trip-expenses', { params: { tripId } }),
+  getAll: (tripSlug: string): Promise<AxiosResponse<TripExpense[]>> =>
+    api.get(`/trip-expenses/by-slug`, { params: { tripSlug } }),
 
   getById: (id: number): Promise<AxiosResponse<TripExpense>> =>
     api.get(`/trip-expenses/${id}`),
 
-  getSummary: (tripId: number): Promise<AxiosResponse<TripExpensesSummary>> =>
-    api.get('/trip-expenses/summary', { params: { tripId } }),
+  getSummary: (tripSlug: string): Promise<AxiosResponse<TripExpensesSummary>> =>
+    api.get(`/trip-expenses/summary/by-slug/${tripSlug}`),
 
   create: (data: CreateTripExpenseDto): Promise<AxiosResponse<TripExpense>> =>
     api.post('/trip-expenses', data),

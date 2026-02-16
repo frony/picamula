@@ -15,6 +15,7 @@ import type { TripExpense } from '@/types/trip-expense.types';
 
 interface TripExpensesSectionProps {
   tripId: number;
+  tripSlug: string;
   tripOwner: User;
   participants: string[];
   isOwner: boolean;
@@ -25,6 +26,7 @@ export const TripExpensesSection: React.FC<TripExpensesSectionProps> = ({
   tripOwner,
   participants,
   isOwner,
+  tripSlug
 }) => {
   const {
     expenses,
@@ -34,7 +36,7 @@ export const TripExpensesSection: React.FC<TripExpensesSectionProps> = ({
     createExpense,
     updateExpense,
     deleteExpense,
-  } = useTripExpenses(tripId);
+  } = useTripExpenses(tripSlug);
 
   const [showForm, setShowForm] = useState(false);
   const [editingExpense, setEditingExpense] = useState<TripExpense | undefined>(
@@ -217,6 +219,7 @@ export const TripExpensesSection: React.FC<TripExpensesSectionProps> = ({
             </h3>
             <ExpenseForm
               tripId={tripId}
+              tripSlug={tripSlug}
               tripOwner={tripOwner}
               participants={participants}
               availableUsers={availableUsers}
