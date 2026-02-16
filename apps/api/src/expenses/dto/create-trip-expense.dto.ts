@@ -44,6 +44,11 @@ export class CreateTripExpenseDto {
   @IsInt()
   tripId: number;
 
+  @ApiProperty({ description: 'Trip slug' })
+  @IsString()
+  @IsOptional()
+  tripSlug?: string | null;
+
   @ApiProperty({ description: 'User ID who paid for the expense' })
   @IsInt()
   paidById: number;

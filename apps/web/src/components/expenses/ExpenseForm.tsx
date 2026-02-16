@@ -13,6 +13,7 @@ type CancelCallback = () => void;
 
 interface ExpenseFormProps {
   tripId: number;
+  tripSlug: string;
   tripOwner: User;
   participants: string[]; // Array of participant emails
   availableUsers: User[]; // List of users who can be payers
@@ -23,6 +24,7 @@ interface ExpenseFormProps {
 
 export const ExpenseForm: React.FC<ExpenseFormProps> = ({
   tripId,
+  tripSlug,
   tripOwner,
   participants,
   availableUsers,
@@ -37,7 +39,8 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
     comment: null,
     amount: 0,
     tripId,
-    paidById: tripOwner.id,
+    tripSlug,
+    paidById: expense?.paidById || tripOwner.id,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +62,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
         comment: expense.comment || null,
         amount: expense.amount,
         tripId: expense.tripId,
+        tripSlug,
         paidById: expense.paidById,
       });
     }

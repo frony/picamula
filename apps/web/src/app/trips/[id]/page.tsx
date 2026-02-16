@@ -440,6 +440,7 @@ export default function TripDetailsPage() {
             <div className="mb-8">
               <TripExpensesSection
                 tripId={trip.id}
+                tripSlug={trip.slug || ''}
                 tripOwner={trip.owner}
                 participants={trip.participants || []}
                 isOwner={isOwner}

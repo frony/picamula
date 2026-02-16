@@ -7,19 +7,19 @@ import type {
   TripExpensesSummary,
 } from '@/types/trip-expense.types';
 
-export const useTripExpenses = (tripId: number) => {
+export const useTripExpenses = (tripSlug: string) => {
   const [expenses, setExpenses] = useState<TripExpense[]>([]);
   const [summary, setSummary] = useState<TripExpensesSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchExpenses = useCallback(async () => {
-    if (!tripId) return;
+    if (!tripSlug) return;
 
     setLoading(true);
     setError(null);
     try {
-      const response = await tripExpensesApi.getAll(tripId);
+      const response = await tripExpensesApi.getAll(tripSlug);
       const data = response.data;
       setExpenses(data);
     } catch (err: any) {
@@ -27,19 +27,19 @@ export const useTripExpenses = (tripId: number) => {
     } finally {
       setLoading(false);
     }
-  }, [tripId]);
+  }, [tripSlug]);
 
   const fetchSummary = useCallback(async () => {
-    if (!tripId) return;
+    if (!tripSlug) return;
 
     try {
-      const response = await tripExpensesApi.getSummary(tripId);
+      const response = await tripExpensesApi.getSummary(tripSlug);
       const data = response.data;
       setSummary(data);
     } catch (err: any) {
       console.error('Failed to fetch summary:', err);
     }
-  }, [tripId]);
+  }, [tripSlug]);
 
   const createExpense = async (data: CreateTripExpenseDto) => {
     setLoading(true);
